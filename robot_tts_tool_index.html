@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robot Voice MP3 Generator</title>
+  <style>
+    :root {
+      --bg: #0d1020;
+      --panel: #171b34;
+      --panel-2: #202648;
+      --text: #f4f7ff;
+      --muted: #aab3d6;
+      --line: rgba(255, 255, 255, .12);
+      --accent: #7cf7d4;
+      --accent-2: #7aa5ff;
+      --danger: #ff7a9a;
+      --shadow: 0 22px 70px rgba(0, 0, 0, .35);
+      --radius: 22px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(124, 247, 212, .18), transparent 32rem),
+        radial-gradient(circle at bottom right, rgba(122, 165, 255, .18), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+    }
+
+    main {
+      width: min(1100px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 36px 0 60px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: max-content;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--accent);
+      background: rgba(255, 255, 255, .05);
+      font-size: 14px;
+      letter-spacing: .02em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 68px);
+      line-height: .95;
+      letter-spacing: -.05em;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .04));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: -.02em;
+    }
+
+    .card-body {
+      padding: 22px;
+      display: grid;
+      gap: 18px;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    textarea,
+    select,
+    input[type="range"],
+    input[type="number"] {
+      width: 100%;
+    }
+
+    textarea,
+    select,
+    input[type="number"] {
+      color: var(--text);
+      background: rgba(7, 10, 25, .8);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      outline: none;
+      padding: 13px 14px;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 240px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+
+    textarea:focus,
+    select:focus,
+    input[type="number"]:focus {
+      border-color: rgba(124, 247, 212, .65);
+      box-shadow: 0 0 0 4px rgba(124, 247, 212, .11);
+    }
+
+    option {
+      color: #0d1020;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr 64px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      accent-color: var(--accent);
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    button,
+    .download {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 16px;
+      color: #07101a;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      font-weight: 850;
+      font-size: 15px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform .15s ease, opacity .15s ease;
+    }
+
+    button.secondary,
+    .download.secondary {
+      color: var(--text);
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid var(--line);
+    }
+
+    button:hover,
+    .download:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled,
+    .download.disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      pointer-events: none;
+      transform: none;
+    }
+
+    .status {
+      min-height: 48px;
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(7, 10, 25, .55);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .status strong {
+      color: var(--accent);
+    }
+
+    .status.error strong {
+      color: var(--danger);
+    }
+
+    audio {
+      width: 100%;
+    }
+
+    .mini {
+      display: grid;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .mini code {
+      color: var(--accent);
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 2px 6px;
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      textarea {
+        min-height: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="badge">🤖 Robot Voice MP3 Generator</div>
+      <h1>Tekst naar robotstem</h1>
+      <p>
+        Plak tekst, kies een robotstem en exporteer direct als MP3. Alles draait in je browser.
+        Er wordt niets naar een eigen server gestuurd.
+      </p>
+    </section>
+
+    <section class="app">
+      <div class="card">
+        <div class="card-header">
+          <h2>Tekst en stem</h2>
+        </div>
+        <div class="card-body">
+          <label>
+            Tekst
+            <textarea id="textInput">Systeem online. Alle modules zijn geladen. Dit is een Nederlandse robotstem test.</textarea>
+            <span class="hint">Kortere teksten genereren sneller. Voor lange scripts kun je per alinea exporteren.</span>
+          </label>
+
+          <label>
+            Robot preset
+            <select id="presetSelect"></select>
+          </label>
+
+          <div class="grid">
+            <label>
+              Snelheid
+              <div class="slider-row">
+                <input id="speed" type="range" min="80" max="260" value="140">
+                <input id="speedNum" type="number" min="80" max="260" value="140">
+              </div>
+            </label>
+
+            <label>
+              Pitch
+              <div class="slider-row">
+                <input id="pitch" type="range" min="0" max="99" value="35">
+                <input id="pitchNum" type="number" min="0" max="99" value="35">
+              </div>
+            </label>
+
+            <label>
+              Volume
+              <div class="slider-row">
+                <input id="amp" type="range" min="20" max="200" value="130">
+                <input id="ampNum" type="number" min="20" max="200" value="130">
+              </div>
+            </label>
+
+            <label>
+              MP3 bitrate
+              <div class="slider-row">
+                <input id="kbps" type="range" min="64" max="192" step="32" value="128">
+                <input id="kbpsNum" type="number" min="64" max="192" step="32" value="128">
+              </div>
+            </label>
+          </div>
+
+          <div class="buttons">
+            <button id="generateBtn">Genereer MP3</button>
+            <button id="demoBtn" class="secondary">Zet demotekst terug</button>
+          </div>
+
+          <div id="status" class="status">Klaar. De eerste generatie kan wat langer duren omdat de WASM synth geladen wordt.</div>
+        </div>
+      </div>
+
+      <aside class="card">
+        <div class="card-header">
+          <h2>Output</h2>
+        </div>
+        <div class="card-body">
+          <audio id="audioPlayer" controls></audio>
+          <div class="buttons">
+            <a id="downloadMp3" class="download disabled" download="robot-voice.mp3" href="#">Download MP3</a>
+            <a id="downloadWav" class="download secondary disabled" download="robot-voice.wav" href="#">Download WAV</a>
+          </div>
+
+          <div class="mini">
+            <p><strong>Hosting op GitHub Pages</strong></p>
+            <p>Maak een repository, upload dit bestand als <code>index.html</code>, ga naar Settings, Pages, kies branch <code>main</code> en map <code>/root</code>.</p>
+            <p><strong>Licentie opmerking</strong></p>
+            <p>Deze MVP gebruikt eSpeak NG en lamejs via CDN. Controleer hun licenties voordat je dit commercieel publiceert.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module">
+    import ESpeakNg from "https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2/dist/espeak-ng.js";
+    import { Mp3Encoder } from "https://cdn.jsdelivr.net/npm/@breezystack/lamejs@1.2.7/dist/lamejs.js";
+
+    const presets = [
+      {
+        id: "nl-classic",
+        label: "NL Classic Robot",
+        voice: "nl",
+        speed: 138,
+        pitch: 34,
+        amp: 135,
+        fx: { ringFreq: 42, ringDepth: .38, bitDepth: 8, echoMs: 70, echoFeedback: .16, highpass: 120, lowpass: 3600 }
+      },
+      {
+        id: "nl-dalek",
+        label: "NL Dalek Bot",
+        voice: "nl+m3",
+        speed: 116,
+        pitch: 20,
+        amp: 165,
+        fx: { ringFreq: 58, ringDepth: .78, bitDepth: 5, echoMs: 105, echoFeedback: .24, highpass: 160, lowpass: 3000 }
+      },
+      {
+        id: "nl-deep",
+        label: "NL Deep Droid",
+        voice: "nl+m7",
+        speed: 104,
+        pitch: 12,
+        amp: 170,
+        fx: { ringFreq: 31, ringDepth: .44, bitDepth: 6, echoMs: 135, echoFeedback: .2, highpass: 90, lowpass: 2700 }
+      },
+      {
+        id: "en-command",
+        label: "EN Command Unit",
+        voice: "en-us",
+        speed: 132,
+        pitch: 30,
+        amp: 140,
+        fx: { ringFreq: 48, ringDepth: .42, bitDepth: 7, echoMs: 75, echoFeedback: .14, highpass: 130, lowpass: 3400 }
+      },
+      {
+        id: "en-tiny",
+        label: "EN Tiny Droid",
+        voice: "en-us+f3",
+        speed: 188,
+        pitch: 72,
+        amp: 125,
+        fx: { ringFreq: 86, ringDepth: .52, bitDepth: 6, echoMs: 38, echoFeedback: .11, highpass: 220, lowpass: 4200 }
+      },
+      {
+        id: "en-whisper",
+        label: "EN Whisper Circuit",
+        voice: "en-us+whisper",
+        speed: 126,
+        pitch: 46,
+        amp: 165,
+        fx: { ringFreq: 66, ringDepth: .34, bitDepth: 7, echoMs: 92, echoFeedback: .18, highpass: 180, lowpass: 3100 }
+      },
+      {
+        id: "de-industrial",
+        label: "DE Industrial Bot",
+        voice: "de+m4",
+        speed: 112,
+        pitch: 24,
+        amp: 155,
+        fx: { ringFreq: 39, ringDepth: .62, bitDepth: 5, echoMs: 118, echoFeedback: .22, highpass: 140, lowpass: 2900 }
+      },
+      {
+        id: "es-radio",
+        label: "ES Radio Robot",
+        voice: "es",
+        speed: 148,
+        pitch: 38,
+        amp: 135,
+        fx: { ringFreq: 74, ringDepth: .28, bitDepth: 7, echoMs: 55, echoFeedback: .12, highpass: 260, lowpass: 2600 }
+      }
+    ];
+
+    const el = {
+      textInput: document.querySelector("#textInput"),
+      presetSelect: document.querySelector("#presetSelect"),
+      speed: document.querySelector("#speed"),
+      speedNum: document.querySelector("#speedNum"),
+      pitch: document.querySelector("#pitch"),
+      pitchNum: document.querySelector("#pitchNum"),
+      amp: document.querySelector("#amp"),
+      ampNum: document.querySelector("#ampNum"),
+      kbps: document.querySelector("#kbps"),
+      kbpsNum: document.querySelector("#kbpsNum"),
+      generateBtn: document.querySelector("#generateBtn"),
+      demoBtn: document.querySelector("#demoBtn"),
+      status: document.querySelector("#status"),
+      audioPlayer: document.querySelector("#audioPlayer"),
+      downloadMp3: document.querySelector("#downloadMp3"),
+      downloadWav: document.querySelector("#downloadWav")
+    };
+
+    let currentUrls = [];
+
+    function init() {
+      presets.forEach((preset) => {
+        const option = document.createElement("option");
+        option.value = preset.id;
+        option.textContent = preset.label;
+        el.presetSelect.appendChild(option);
+      });
+
+      el.presetSelect.value = "nl-classic";
+      applyPresetToControls(getPreset());
+
+      bindPair(el.speed, el.speedNum);
+      bindPair(el.pitch, el.pitchNum);
+      bindPair(el.amp, el.ampNum);
+      bindPair(el.kbps, el.kbpsNum);
+
+      el.presetSelect.addEventListener("change", () => applyPresetToControls(getPreset()));
+      el.generateBtn.addEventListener("click", generate);
+      el.demoBtn.addEventListener("click", () => {
+        el.textInput.value = "Systeem online. Alle modules zijn geladen. Dit is een Nederlandse robotstem test.";
+      });
+    }
+
+    function bindPair(range, number) {
+      range.addEventListener("input", () => number.value = range.value);
+      number.addEventListener("input", () => range.value = number.value);
+    }
+
+    function getPreset() {
+      return presets.find((preset) => preset.id === el.presetSelect.value) || presets[0];
+    }
+
+    function applyPresetToControls(preset) {
+      el.speed.value = preset.speed;
+      el.speedNum.value = preset.speed;
+      el.pitch.value = preset.pitch;
+      el.pitchNum.value = preset.pitch;
+      el.amp.value = preset.amp;
+      el.ampNum.value = preset.amp;
+    }
+
+    function setStatus(message, isError = false) {
+      el.status.classList.toggle("error", isError);
+      el.status.innerHTML = message;
+    }
+
+    function lockUi(isLocked) {
+      el.generateBtn.disabled = isLocked;
+      el.generateBtn.textContent = isLocked ? "Bezig..." : "Genereer MP3";
+    }
+
+    async function generate() {
+      const text = el.textInput.value.trim();
+      if (!text) {
+        setStatus("<strong>Geen tekst.</strong> Vul eerst tekst in.", true);
+        return;
+      }
+
+      const preset = getPreset();
+      const speed = clampInt(el.speed.value, 80, 260);
+      const pitch = clampInt(el.pitch.value, 0, 99);
+      const amp = clampInt(el.amp.value, 20, 200);
+      const kbps = clampInt(el.kbps.value, 64, 192);
+
+      try {
+        lockUi(true);
+        revokeUrls();
+        setStatus("<strong>Stap 1 van 3.</strong> Spraak synthese wordt gestart.");
+
+        const wavBytes = await synthesizeWav({
+          text,
+          voice: preset.voice,
+          speed,
+          pitch,
+          amp
+        });
+
+        setStatus("<strong>Stap 2 van 3.</strong> Robot effect wordt toegepast.");
+
+        const decoded = decodeWav(wavBytes);
+        const mono = mixToMono(decoded);
+        const processed = applyRobotFx(mono, decoded.sampleRate, preset.fx);
+        const int16 = floatToInt16(processed);
+
+        setStatus("<strong>Stap 3 van 3.</strong> MP3 wordt gecodeerd.");
+
+        const wavBlob = encodeWavMono(int16, decoded.sampleRate);
+        const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
+
+        const mp3Url = URL.createObjectURL(mp3Blob);
+        const wavUrl = URL.createObjectURL(wavBlob);
+        currentUrls.push(mp3Url, wavUrl);
+
+        el.audioPlayer.src = mp3Url;
+        el.downloadMp3.href = mp3Url;
+        el.downloadWav.href = wavUrl;
+        el.downloadMp3.download = makeFileName("mp3");
+        el.downloadWav.download = makeFileName("wav");
+        el.downloadMp3.classList.remove("disabled");
+        el.downloadWav.classList.remove("disabled");
+
+        const seconds = (int16.length / decoded.sampleRate).toFixed(1);
+        setStatus(`<strong>Klaar.</strong> Audio lengte: ${seconds} sec. MP3 bitrate: ${kbps} kbps.`);
+      } catch (error) {
+        console.error(error);
+        setStatus(`<strong>Fout.</strong> ${escapeHtml(error.message || String(error))}`, true);
+      } finally {
+        lockUi(false);
+      }
+    }
+
+    async function synthesizeWav({ text, voice, speed, pitch, amp }) {
+      const module = await ESpeakNg({
+        locateFile: (fileName) => `https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2/dist/${fileName}`,
+        arguments: [
+          "-v", voice,
+          "-s", String(speed),
+          "-p", String(pitch),
+          "-a", String(amp),
+          "-w", "robot.wav",
+          text
+        ]
+      });
+
+      const file = module.FS.readFile("robot.wav");
+      if (!file || !file.byteLength) {
+        throw new Error("Er is geen WAV output gemaakt. Probeer een andere stem of kortere tekst.");
+      }
+      return file;
+    }
+
+    function decodeWav(bytes) {
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const riff = readString(view, 0, 4);
+      const wave = readString(view, 8, 4);
+      if (riff !== "RIFF" || wave !== "WAVE") {
+        throw new Error("De synth output is geen geldige WAV.");
+      }
+
+      let offset = 12;
+      let audioFormat = 1;
+      let channels = 1;
+      let sampleRate = 22050;
+      let bitsPerSample = 16;
+      let dataOffset = 0;
+      let dataSize = 0;
+
+      while (offset + 8 <= view.byteLength) {
+        const id = readString(view, offset, 4);
+        const size = view.getUint32(offset + 4, true);
+        const chunkStart = offset + 8;
+
+        if (id === "fmt ") {
+          audioFormat = view.getUint16(chunkStart, true);
+          channels = view.getUint16(chunkStart + 2, true);
+          sampleRate = view.getUint32(chunkStart + 4, true);
+          bitsPerSample = view.getUint16(chunkStart + 14, true);
+        }
+
+        if (id === "data") {
+          dataOffset = chunkStart;
+          dataSize = size;
+          break;
+        }
+
+        offset = chunkStart + size + (size % 2);
+      }
+
+      if (audioFormat !== 1) {
+        throw new Error("Alleen PCM WAV wordt ondersteund.");
+      }
+      if (!dataOffset || !dataSize) {
+        throw new Error("Geen audio data gevonden in de WAV.");
+      }
+
+      const bytesPerSample = bitsPerSample / 8;
+      const frameCount = dataSize / bytesPerSample / channels;
+      const channelData = Array.from({ length: channels }, () => new Float32Array(frameCount));
+
+      let p = dataOffset;
+      for (let i = 0; i < frameCount; i++) {
+        for (let ch = 0; ch < channels; ch++) {
+          let value = 0;
+          if (bitsPerSample === 16) {
+            value = view.getInt16(p, true) / 32768;
+          } else if (bitsPerSample === 8) {
+            value = (view.getUint8(p) - 128) / 128;
+          } else {
+            throw new Error(`${bitsPerSample} bit WAV wordt nog niet ondersteund.`);
+          }
+          channelData[ch][i] = value;
+          p += bytesPerSample;
+        }
+      }
+
+      return { sampleRate, channels, channelData };
+    }
+
+    function mixToMono(decoded) {
+      if (decoded.channels === 1) return decoded.channelData[0];
+
+      const length = decoded.channelData[0].length;
+      const mono = new Float32Array(length);
+
+      for (let i = 0; i < length; i++) {
+        let sum = 0;
+        for (let ch = 0; ch < decoded.channels; ch++) {
+          sum += decoded.channelData[ch][i];
+        }
+        mono[i] = sum / decoded.channels;
+      }
+
+      return mono;
+    }
+
+    function applyRobotFx(input, sampleRate, fx) {
+      let output = new Float32Array(input);
+
+      if (fx.highpass) output = highpass(output, sampleRate, fx.highpass);
+      if (fx.lowpass) output = lowpass(output, sampleRate, fx.lowpass);
+
+      const levels = fx.bitDepth ? Math.pow(2, fx.bitDepth - 1) : 0;
+      const delaySamples = fx.echoMs ? Math.round(sampleRate * fx.echoMs / 1000) : 0;
+
+      for (let i = 0; i < output.length; i++) {
+        const t = i / sampleRate;
+        let x = output[i];
+
+        if (fx.ringFreq && fx.ringDepth) {
+          const carrier = Math.sign(Math.sin(2 * Math.PI * fx.ringFreq * t)) || 1;
+          const mod = (1 - fx.ringDepth) + fx.ringDepth * carrier;
+          x *= mod;
+        }
+
+        if (levels) {
+          x = Math.round(x * levels) / levels;
+        }
+
+        if (delaySamples && i >= delaySamples) {
+          x += output[i - delaySamples] * fx.echoFeedback;
+        }
+
+        output[i] = clamp(x, -1, 1);
+      }
+
+      return normalize(output, .96);
+    }
+
+    function lowpass(input, sampleRate, cutoff) {
+      const output = new Float32Array(input.length);
+      const rc = 1 / (2 * Math.PI * cutoff);
+      const dt = 1 / sampleRate;
+      const alpha = dt / (rc + dt);
+      let y = input[0] || 0;
+
+      for (let i = 0; i < input.length; i++) {
+        y = y + alpha * (input[i] - y);
+        output[i] = y;
+      }
+
+      return output;
+    }
+
+    function highpass(input, sampleRate, cutoff) {
+      const output = new Float32Array(input.length);
+      const rc = 1 / (2 * Math.PI * cutoff);
+      const dt = 1 / sampleRate;
+      const alpha = rc / (rc + dt);
+      let y = 0;
+      let lastX = input[0] || 0;
+
+      for (let i = 0; i < input.length; i++) {
+        const x = input[i];
+        y = alpha * (y + x - lastX);
+        output[i] = y;
+        lastX = x;
+      }
+
+      return output;
+    }
+
+    function normalize(input, peak) {
+      let max = 0;
+      for (const sample of input) {
+        max = Math.max(max, Math.abs(sample));
+      }
+      if (max < .001) return input;
+
+      const gain = peak / max;
+      const output = new Float32Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        output[i] = clamp(input[i] * gain, -1, 1);
+      }
+      return output;
+    }
+
+    function floatToInt16(input) {
+      const output = new Int16Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        const x = clamp(input[i], -1, 1);
+        output[i] = x < 0 ? x * 32768 : x * 32767;
+      }
+      return output;
+    }
+
+    function encodeMp3Mono(samples, sampleRate, kbps) {
+      const encoder = new Mp3Encoder(1, sampleRate, kbps);
+      const chunks = [];
+      const blockSize = 1152;
+
+      for (let i = 0; i < samples.length; i += blockSize) {
+        const mp3buf = encoder.encodeBuffer(samples.subarray(i, i + blockSize));
+        if (mp3buf.length) chunks.push(mp3buf);
+      }
+
+      const end = encoder.flush();
+      if (end.length) chunks.push(end);
+
+      return new Blob(chunks, { type: "audio/mpeg" });
+    }
+
+    function encodeWavMono(samples, sampleRate) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+
+      writeString(view, 0, "RIFF");
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(view, 8, "WAVE");
+      writeString(view, 12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(view, 36, "data");
+      view.setUint32(40, samples.length * 2, true);
+
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++) {
+        view.setInt16(offset, samples[i], true);
+        offset += 2;
+      }
+
+      return new Blob([buffer], { type: "audio/wav" });
+    }
+
+    function readString(view, offset, length) {
+      let value = "";
+      for (let i = 0; i < length; i++) {
+        value += String.fromCharCode(view.getUint8(offset + i));
+      }
+      return value;
+    }
+
+    function writeString(view, offset, value) {
+      for (let i = 0; i < value.length; i++) {
+        view.setUint8(offset + i, value.charCodeAt(i));
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function clampInt(value, min, max) {
+      return Math.round(clamp(Number(value) || min, min, max));
+    }
+
+    function makeFileName(extension) {
+      const preset = getPreset().id;
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "");
+      return `robot-voice-${preset}-${stamp}.${extension}`;
+    }
+
+    function revokeUrls() {
+      currentUrls.forEach((url) => URL.revokeObjectURL(url));
+      currentUrls = [];
+      el.downloadMp3.classList.add("disabled");
+      el.downloadWav.classList.add("disabled");
+      el.downloadMp3.href = "#";
+      el.downloadWav.href = "#";
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    init();
+  </script>
+</body>
+</html>
