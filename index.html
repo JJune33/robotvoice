@@ -289,7 +289,7 @@
         <div class="card-body">
           <label>
             Tekst
-            <textarea id="textInput">Systeem online. Alle modules zijn geladen. Dit is een Nederlandse robotstem test.</textarea>
+            <textarea id="textInput">Good evening. All systems are operating within normal parameters. I am ready to assist you.</textarea>
             <span class="hint">Kortere teksten genereren sneller. Voor lange scripts kun je per alinea exporteren.</span>
           </label>
 
@@ -431,6 +431,33 @@
         pitch: 48,
         amp: 138,
         fx: { ringFreq: 36, ringDepth: .36, bitDepth: 8, echoMs: 120, echoFeedback: .18, highpass: 180, lowpass: 3900 }
+      },
+      {
+        id: "en-calm-space-ai",
+        label: "EN Calm Space AI",
+        voice: "en-us+m1",
+        speed: 108,
+        pitch: 26,
+        amp: 138,
+        fx: { ringFreq: 0, ringDepth: 0, bitDepth: 12, echoMs: 42, echoFeedback: .06, highpass: 95, lowpass: 4200 }
+      },
+      {
+        id: "en-soft-pod-computer",
+        label: "EN Soft Pod Computer",
+        voice: "en-us+m2",
+        speed: 98,
+        pitch: 22,
+        amp: 132,
+        fx: { ringFreq: 0, ringDepth: 0, bitDepth: 13, echoMs: 58, echoFeedback: .07, highpass: 85, lowpass: 3900 }
+      },
+      {
+        id: "en-calm-orbital-mainframe",
+        label: "EN Calm Orbital Mainframe",
+        voice: "en-gb-x-rp+m1",
+        speed: 104,
+        pitch: 24,
+        amp: 136,
+        fx: { ringFreq: 0, ringDepth: 0, bitDepth: 12, echoMs: 48, echoFeedback: .05, highpass: 90, lowpass: 4000 }
       },
       {
         id: "en-tiny",
@@ -592,7 +619,7 @@
       el.presetSelect.addEventListener("change", () => applyPresetToControls(getPreset()));
       el.generateBtn.addEventListener("click", generate);
       el.demoBtn.addEventListener("click", () => {
-        el.textInput.value = "Systeem online. Alle modules zijn geladen. Dit is een Nederlandse robotstem test.";
+        el.textInput.value = "Good evening. All systems are operating within normal parameters. I am ready to assist you.";
       });
     }
 
