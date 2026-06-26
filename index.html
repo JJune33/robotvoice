@@ -6,17 +6,22 @@
   <title>Robot Voice MP3 Generator</title>
   <style>
     :root {
-      --bg: #0d1020;
-      --panel: #171b34;
-      --panel-2: #202648;
-      --text: #f4f7ff;
-      --muted: #aab3d6;
-      --line: rgba(255, 255, 255, .12);
-      --accent: #7cf7d4;
-      --accent-2: #7aa5ff;
-      --danger: #ff7a9a;
-      --shadow: 0 22px 70px rgba(0, 0, 0, .35);
-      --radius: 22px;
+      --bg: #15120b;
+      --bg-2: #211a12;
+      --panel: rgba(64, 54, 44, .78);
+      --panel-2: rgba(43, 35, 28, .86);
+      --field: rgba(25, 20, 16, .92);
+      --text: #f7ead8;
+      --muted: #d4c1ad;
+      --line: rgba(219, 164, 82, .24);
+      --line-strong: rgba(246, 187, 75, .48);
+      --accent: #f8bd3f;
+      --accent-2: #b57922;
+      --accent-soft: rgba(248, 189, 63, .16);
+      --danger: #ff9a6f;
+      --shadow: 0 24px 80px rgba(0, 0, 0, .46);
+      --inner: inset 0 1px 0 rgba(255, 241, 217, .08);
+      --radius: 28px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -28,22 +33,28 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at top left, rgba(124, 247, 212, .18), transparent 32rem),
-        radial-gradient(circle at bottom right, rgba(122, 165, 255, .18), transparent 30rem),
-        var(--bg);
+        radial-gradient(circle at 55% 38%, rgba(248, 189, 63, .12), transparent 21rem),
+        radial-gradient(circle at 90% 26%, rgba(248, 189, 63, .16), transparent 18rem),
+        radial-gradient(circle at 15% 12%, rgba(255, 229, 186, .08), transparent 16rem),
+        linear-gradient(135deg, #17130b 0%, #211a12 48%, #120f09 100%);
       color: var(--text);
     }
 
     main {
-      width: min(1100px, calc(100vw - 32px));
+      width: min(1120px, calc(100vw - 32px));
       margin: 0 auto;
-      padding: 36px 0 60px;
+      padding: 28px 0 56px;
     }
 
     .hero {
       display: grid;
-      gap: 18px;
-      margin-bottom: 24px;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 28px 30px;
+      background: linear-gradient(180deg, rgba(71, 61, 51, .78), rgba(45, 37, 30, .78));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow), var(--inner);
     }
 
     .badge {
@@ -55,24 +66,27 @@
       border: 1px solid var(--line);
       border-radius: 999px;
       color: var(--accent);
-      background: rgba(255, 255, 255, .05);
-      font-size: 14px;
+      background: rgba(20, 16, 12, .42);
+      font-size: 13px;
       letter-spacing: .02em;
+      box-shadow: var(--inner);
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(34px, 6vw, 68px);
-      line-height: .95;
-      letter-spacing: -.05em;
+      font-size: clamp(24px, 3.1vw, 38px);
+      line-height: 1.05;
+      letter-spacing: -.035em;
+      color: var(--text);
+      text-shadow: 0 3px 16px rgba(0, 0, 0, .32);
     }
 
     .hero p {
       max-width: 760px;
       margin: 0;
       color: var(--muted);
-      font-size: 18px;
-      line-height: 1.6;
+      font-size: 16px;
+      line-height: 1.55;
     }
 
     .app {
@@ -83,23 +97,25 @@
     }
 
     .card {
-      background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .04));
+      background: linear-gradient(180deg, rgba(69, 59, 49, .82), rgba(43, 35, 29, .84));
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow), var(--inner);
       overflow: hidden;
+      backdrop-filter: blur(10px);
     }
 
     .card-header {
-      padding: 20px 22px;
+      padding: 18px 22px;
       border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, .04);
+      background: rgba(25, 20, 16, .32);
     }
 
     .card-header h2 {
       margin: 0;
-      font-size: 19px;
+      font-size: 18px;
       letter-spacing: -.02em;
+      color: var(--text);
     }
 
     .card-body {
@@ -112,7 +128,7 @@
       display: grid;
       gap: 8px;
       color: var(--text);
-      font-weight: 700;
+      font-weight: 800;
       font-size: 14px;
     }
 
@@ -134,12 +150,13 @@
     select,
     input[type="number"] {
       color: var(--text);
-      background: rgba(7, 10, 25, .8);
+      background: var(--field);
       border: 1px solid var(--line);
-      border-radius: 14px;
+      border-radius: 16px;
       outline: none;
       padding: 13px 14px;
       font: inherit;
+      box-shadow: inset 0 1px 0 rgba(255, 238, 210, .05), inset 0 18px 44px rgba(0, 0, 0, .24);
     }
 
     textarea {
@@ -151,12 +168,13 @@
     textarea:focus,
     select:focus,
     input[type="number"]:focus {
-      border-color: rgba(124, 247, 212, .65);
-      box-shadow: 0 0 0 4px rgba(124, 247, 212, .11);
+      border-color: var(--line-strong);
+      box-shadow: 0 0 0 4px var(--accent-soft), inset 0 18px 44px rgba(0, 0, 0, .24);
     }
 
     option {
-      color: #0d1020;
+      color: #211a12;
+      background: #f7ead8;
     }
 
     .grid {
@@ -185,28 +203,34 @@
     button,
     .download {
       appearance: none;
-      border: 0;
-      border-radius: 14px;
-      padding: 13px 16px;
-      color: #07101a;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      font-weight: 850;
+      border: 1px solid rgba(255, 223, 151, .24);
+      border-radius: 999px;
+      padding: 13px 18px;
+      color: #241704;
+      background: linear-gradient(180deg, #ffd262 0%, #f0a51f 58%, #bd7719 100%);
+      font-weight: 900;
       font-size: 15px;
       cursor: pointer;
       text-decoration: none;
-      transition: transform .15s ease, opacity .15s ease;
+      transition: transform .15s ease, opacity .15s ease, filter .15s ease;
+      box-shadow:
+        0 10px 24px rgba(0, 0, 0, .28),
+        inset 0 1px 0 rgba(255, 245, 206, .55),
+        inset 0 -2px 0 rgba(91, 50, 9, .25);
     }
 
     button.secondary,
     .download.secondary {
-      color: var(--text);
-      background: rgba(255, 255, 255, .08);
-      border: 1px solid var(--line);
+      color: #d5a052;
+      background: rgba(28, 22, 17, .54);
+      border: 1px solid rgba(211, 147, 59, .18);
+      box-shadow: inset 0 1px 0 rgba(255, 238, 210, .05);
     }
 
     button:hover,
     .download:hover {
       transform: translateY(-1px);
+      filter: brightness(1.04);
     }
 
     button:disabled,
@@ -215,16 +239,18 @@
       cursor: not-allowed;
       pointer-events: none;
       transform: none;
+      filter: none;
     }
 
     .status {
       min-height: 48px;
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 14px;
-      background: rgba(7, 10, 25, .55);
+      background: rgba(25, 20, 16, .72);
       border: 1px solid var(--line);
       color: var(--muted);
       line-height: 1.45;
+      box-shadow: inset 0 1px 0 rgba(255, 238, 210, .04);
     }
 
     .status strong {
@@ -237,25 +263,18 @@
 
     audio {
       width: 100%;
-    }
-
-    .mini {
-      display: grid;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
-    .mini code {
-      color: var(--accent);
-      background: rgba(255, 255, 255, .06);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 2px 6px;
+      filter: sepia(.28) saturate(.85);
     }
 
     @media (max-width: 860px) {
+      main {
+        padding-top: 18px;
+      }
+
+      .hero {
+        padding: 22px;
+      }
+
       .app {
         grid-template-columns: 1fr;
       }
@@ -276,8 +295,7 @@
       <div class="badge">🤖 Robot Voice MP3 Generator</div>
       <h1>Tekst naar robotstem</h1>
       <p>
-        Plak tekst, kies uit extra veel robotstemmen en exporteer direct als MP3. Alles draait in je browser.
-        Er wordt niets naar een eigen server gestuurd.
+        Plak tekst, kies een robotstem en exporteer direct als MP3.
       </p>
     </section>
 
@@ -351,14 +369,7 @@
             <a id="downloadMp3" class="download disabled" download="robot-voice.mp3" href="#">Download MP3</a>
             <a id="downloadWav" class="download secondary disabled" download="robot-voice.wav" href="#">Download WAV</a>
           </div>
-
-          <div class="mini">
-            <p><strong>Hosting op GitHub Pages</strong></p>
-            <p>Maak een repository, upload dit bestand als <code>index.html</code>, ga naar Settings, Pages, kies branch <code>main</code> en map <code>/root</code>.</p>
-            <p><strong>Licentie opmerking</strong></p>
-            <p>Deze MVP gebruikt eSpeak NG en lamejs via CDN. Controleer hun licenties voordat je dit commercieel publiceert.</p>
-          </div>
-        </div>
+</div>
       </aside>
     </section>
   </main>
