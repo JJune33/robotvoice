@@ -266,6 +266,278 @@
       filter: sepia(.28) saturate(.85);
     }
 
+
+    .voice-control {
+      display: grid;
+      gap: 8px;
+    }
+
+    .voice-label {
+      color: var(--text);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .voice-selected {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      text-align: left;
+      border-radius: 20px;
+      padding: 16px 18px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 92% 50%, rgba(248, 189, 63, .16), transparent 10rem),
+        rgba(25, 20, 16, .78);
+      border: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(255, 238, 210, .06);
+    }
+
+    .voice-selected strong {
+      display: block;
+      font-size: 18px;
+      letter-spacing: -.02em;
+      margin-bottom: 4px;
+    }
+
+    .voice-selected small {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .voice-selected em {
+      font-style: normal;
+      color: #241704;
+      background: linear-gradient(180deg, #ffd262 0%, #f0a51f 58%, #bd7719 100%);
+      border-radius: 999px;
+      padding: 8px 13px;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: inset 0 1px 0 rgba(255, 245, 206, .5);
+      white-space: nowrap;
+    }
+
+    .voice-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(8, 6, 4, .54);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity .2s ease;
+    }
+
+    .voice-overlay.is-open {
+      opacity: 1;
+    }
+
+    .voice-drawer {
+      position: fixed;
+      inset: 18px auto 18px 18px;
+      z-index: 90;
+      width: min(440px, calc(100vw - 36px));
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      background:
+        radial-gradient(circle at 80% 10%, rgba(248, 189, 63, .15), transparent 15rem),
+        linear-gradient(180deg, rgba(74, 63, 52, .96), rgba(34, 27, 21, .98));
+      border: 1px solid var(--line-strong);
+      border-radius: 30px;
+      box-shadow: 0 34px 110px rgba(0, 0, 0, .62), var(--inner);
+      transform: translateX(calc(-100% - 34px));
+      transition: transform .24s ease;
+      overflow: hidden;
+    }
+
+    .voice-drawer.is-open {
+      transform: translateX(0);
+    }
+
+    .voice-drawer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .voice-drawer-head p {
+      margin: 0 0 5px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .voice-drawer-head h2 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1;
+      letter-spacing: -.045em;
+    }
+
+    .icon-button {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      color: var(--muted);
+      background: rgba(22, 17, 13, .58);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 30px;
+      line-height: 1;
+      box-shadow: inset 0 1px 0 rgba(255, 238, 210, .05);
+    }
+
+    .voice-search-wrap {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(16, 12, 9, .18);
+    }
+
+    .voice-search {
+      width: 100%;
+      color: var(--text);
+      background: rgba(20, 15, 11, .82);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      outline: none;
+      padding: 14px 16px;
+      font: inherit;
+      font-weight: 750;
+      box-shadow: inset 0 14px 28px rgba(0, 0, 0, .2);
+    }
+
+    .voice-search::placeholder {
+      color: rgba(212, 193, 173, .62);
+    }
+
+    .voice-search:focus {
+      border-color: var(--line-strong);
+      box-shadow: 0 0 0 4px var(--accent-soft), inset 0 14px 28px rgba(0, 0, 0, .2);
+    }
+
+    .voice-list {
+      overflow: auto;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(248, 189, 63, .55) rgba(20, 15, 11, .4);
+    }
+
+    .voice-card {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      text-align: left;
+      padding: 15px 16px;
+      color: var(--text);
+      background: rgba(24, 18, 14, .62);
+      border: 1px solid rgba(219, 164, 82, .16);
+      border-radius: 20px;
+      box-shadow: inset 0 1px 0 rgba(255, 238, 210, .04);
+    }
+
+    .voice-card:hover {
+      transform: none;
+      filter: brightness(1.07);
+      border-color: rgba(248, 189, 63, .38);
+    }
+
+    .voice-card.is-selected {
+      background:
+        radial-gradient(circle at 92% 44%, rgba(248, 189, 63, .2), transparent 8rem),
+        rgba(40, 29, 18, .86);
+      border-color: rgba(248, 189, 63, .62);
+    }
+
+    .voice-card-title {
+      display: block;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: -.02em;
+      margin-bottom: 6px;
+    }
+
+    .voice-card-desc {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      line-height: 1.35;
+      margin-bottom: 9px;
+    }
+
+    .voice-card-code {
+      display: inline-flex;
+      width: max-content;
+      max-width: 100%;
+      color: #f3c46f;
+      background: rgba(0, 0, 0, .18);
+      border: 1px solid rgba(248, 189, 63, .14);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 850;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .voice-card-check {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      color: #241704;
+      background: transparent;
+      font-weight: 1000;
+    }
+
+    .voice-card.is-selected .voice-card-check {
+      background: linear-gradient(180deg, #ffd262 0%, #f0a51f 68%, #bd7719 100%);
+    }
+
+    .voice-empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 28px 16px;
+      font-weight: 700;
+    }
+
+    body.voice-drawer-open {
+      overflow: hidden;
+    }
+
+    @media (max-width: 560px) {
+      .voice-drawer {
+        inset: 10px;
+        width: auto;
+        border-radius: 24px;
+      }
+
+      .voice-drawer-head h2 {
+        font-size: 26px;
+      }
+
+      .voice-selected {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
     @media (max-width: 860px) {
       main {
         padding-top: 18px;
@@ -291,6 +563,24 @@
 </head>
 <body>
   <main>
+    <div id="voiceOverlay" class="voice-overlay" hidden></div>
+
+    <aside id="voiceDrawer" class="voice-drawer" aria-hidden="true">
+      <div class="voice-drawer-head">
+        <div>
+          <p>Voice Rack</p>
+          <h2>Robot voices</h2>
+        </div>
+        <button id="closeVoiceDrawer" class="icon-button" type="button" aria-label="Close voice rack">×</button>
+      </div>
+
+      <div class="voice-search-wrap">
+        <input id="voiceSearch" class="voice-search" type="search" placeholder="Search voice">
+      </div>
+
+      <div id="voiceList" class="voice-list"></div>
+    </aside>
+
     <section class="hero">
       <div class="badge">🤖 Robot Voice MP3 Generator</div>
       <h1>Tekst naar robotstem</h1>
@@ -310,11 +600,16 @@
             <textarea id="textInput">Good evening. All systems are operating within normal parameters. I am ready to assist you.</textarea>
             <span class="hint">Kortere teksten genereren sneller. Voor lange scripts kun je per alinea exporteren.</span>
           </label>
-
-          <label>
-            Robot preset
-            <select id="presetSelect"></select>
-          </label>
+          <div class="voice-control">
+            <div class="voice-label">Voice</div>
+            <button id="openVoiceDrawer" class="voice-selected" type="button">
+              <span>
+                <strong id="selectedVoiceName">Calm Space AI</strong>
+                <small id="selectedVoiceMeta">Slow, low, clean</small>
+              </span>
+              <em>Browse</em>
+            </button>
+          </div>
 
           <div class="grid">
             <label>
@@ -381,6 +676,7 @@
     const presets = [
       {
         id: "nl-classic",
+        desc: "Dutch, clean, classic robot",
         label: "NL Classic Robot",
         voice: "nl",
         speed: 138,
@@ -390,6 +686,7 @@
       },
       {
         id: "nl-dalek",
+        desc: "Dutch, harsh, aggressive",
         label: "NL Dalek Bot",
         voice: "nl+m3",
         speed: 116,
@@ -399,6 +696,7 @@
       },
       {
         id: "nl-deep",
+        desc: "Dutch, low, heavy",
         label: "NL Deep Droid",
         voice: "nl+m7",
         speed: 104,
@@ -409,6 +707,7 @@
 
       {
         id: "en-command",
+        desc: "Direct, balanced, clear",
         label: "EN Command Unit",
         voice: "en-us",
         speed: 132,
@@ -418,6 +717,7 @@
       },
       {
         id: "en-deep-core",
+        desc: "Low, heavy, controlled",
         label: "EN Deep Core",
         voice: "en-us+m7",
         speed: 96,
@@ -427,6 +727,7 @@
       },
       {
         id: "en-metal-servo",
+        desc: "Sharp, metallic, synthetic",
         label: "EN Metal Servo",
         voice: "en-us+m3",
         speed: 122,
@@ -436,6 +737,7 @@
       },
       {
         id: "en-space-computer",
+        desc: "Clean, steady, orbital",
         label: "EN Space Computer",
         voice: "en-us+f2",
         speed: 142,
@@ -445,6 +747,7 @@
       },
       {
         id: "en-calm-space-ai",
+        desc: "Slow, low, clean",
         label: "EN Calm Space AI",
         voice: "en-us+m1",
         speed: 108,
@@ -454,6 +757,7 @@
       },
       {
         id: "en-soft-pod-computer",
+        desc: "Soft, calm, close",
         label: "EN Soft Pod Computer",
         voice: "en-us+m2",
         speed: 98,
@@ -463,6 +767,7 @@
       },
       {
         id: "en-calm-orbital-mainframe",
+        desc: "Calm, formal, restrained",
         label: "EN Calm Orbital Mainframe",
         voice: "en-gb-x-rp+m1",
         speed: 104,
@@ -472,6 +777,7 @@
       },
       {
         id: "en-tiny",
+        desc: "Fast, bright, nervous",
         label: "EN Tiny Droid",
         voice: "en-us+f3",
         speed: 188,
@@ -481,6 +787,7 @@
       },
       {
         id: "en-alarm-bot",
+        desc: "Bright, urgent, high energy",
         label: "EN Alarm Bot",
         voice: "en-us+f4",
         speed: 176,
@@ -490,6 +797,7 @@
       },
       {
         id: "en-broadcast-android",
+        desc: "Clear, radio, android",
         label: "EN Broadcast Android",
         voice: "en-us+m1",
         speed: 136,
@@ -499,6 +807,7 @@
       },
       {
         id: "en-terminal-1979",
+        desc: "Retro, narrow, degraded",
         label: "EN Terminal 1979",
         voice: "en-us+m5",
         speed: 108,
@@ -508,6 +817,7 @@
       },
       {
         id: "en-cyborg-operator",
+        desc: "Controlled, synthetic, firm",
         label: "EN Cyborg Operator",
         voice: "en-us+m4",
         speed: 128,
@@ -517,6 +827,7 @@
       },
       {
         id: "en-synthetic-assistant",
+        desc: "Clean, bright, assistant",
         label: "EN Synthetic Assistant",
         voice: "en-us+f1",
         speed: 152,
@@ -526,6 +837,7 @@
       },
       {
         id: "en-whisper",
+        desc: "Airy, hidden, circuit",
         label: "EN Whisper Circuit",
         voice: "en-us+whisper",
         speed: 126,
@@ -535,6 +847,7 @@
       },
       {
         id: "en-croak-machine",
+        desc: "Rough, broken, mechanical",
         label: "EN Croak Machine",
         voice: "en-us+croak",
         speed: 118,
@@ -544,6 +857,7 @@
       },
       {
         id: "en-uk-mech",
+        desc: "UK, mechanical, steady",
         label: "EN UK Mech",
         voice: "en-gb+m2",
         speed: 126,
@@ -553,6 +867,7 @@
       },
       {
         id: "en-uk-ai",
+        desc: "UK, clean, artificial",
         label: "EN UK AI Unit",
         voice: "en-gb+f2",
         speed: 148,
@@ -562,6 +877,7 @@
       },
       {
         id: "en-uk-bunker",
+        desc: "UK, low, bunker",
         label: "EN UK Bunker Droid",
         voice: "en-gb+m6",
         speed: 102,
@@ -572,6 +888,7 @@
 
       {
         id: "de-industrial",
+        desc: "German, industrial, heavy",
         label: "DE Industrial Bot",
         voice: "de+m4",
         speed: 112,
@@ -581,6 +898,7 @@
       },
       {
         id: "es-radio",
+        desc: "Spanish, radio, compact",
         label: "ES Radio Robot",
         voice: "es",
         speed: 148,
@@ -592,7 +910,14 @@
 
     const el = {
       textInput: document.querySelector("#textInput"),
-      presetSelect: document.querySelector("#presetSelect"),
+      openVoiceDrawer: document.querySelector("#openVoiceDrawer"),
+      closeVoiceDrawer: document.querySelector("#closeVoiceDrawer"),
+      voiceDrawer: document.querySelector("#voiceDrawer"),
+      voiceOverlay: document.querySelector("#voiceOverlay"),
+      voiceSearch: document.querySelector("#voiceSearch"),
+      voiceList: document.querySelector("#voiceList"),
+      selectedVoiceName: document.querySelector("#selectedVoiceName"),
+      selectedVoiceMeta: document.querySelector("#selectedVoiceMeta"),
       speed: document.querySelector("#speed"),
       speedNum: document.querySelector("#speedNum"),
       pitch: document.querySelector("#pitch"),
@@ -610,24 +935,27 @@
     };
 
     let currentUrls = [];
+    let selectedPresetId = "en-calm-space-ai";
 
     function init() {
-      presets.forEach((preset) => {
-        const option = document.createElement("option");
-        option.value = preset.id;
-        option.textContent = preset.label;
-        el.presetSelect.appendChild(option);
-      });
-
-      el.presetSelect.value = "nl-classic";
+      selectedPresetId = "en-calm-space-ai";
+      renderVoiceList();
       applyPresetToControls(getPreset());
+      updateSelectedVoice();
 
       bindPair(el.speed, el.speedNum);
       bindPair(el.pitch, el.pitchNum);
       bindPair(el.amp, el.ampNum);
       bindPair(el.kbps, el.kbpsNum);
 
-      el.presetSelect.addEventListener("change", () => applyPresetToControls(getPreset()));
+      el.openVoiceDrawer.addEventListener("click", openVoiceDrawer);
+      el.closeVoiceDrawer.addEventListener("click", closeVoiceDrawer);
+      el.voiceOverlay.addEventListener("click", closeVoiceDrawer);
+      el.voiceSearch.addEventListener("input", renderVoiceList);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeVoiceDrawer();
+      });
+
       el.generateBtn.addEventListener("click", generate);
       el.demoBtn.addEventListener("click", () => {
         el.textInput.value = "Good evening. All systems are operating within normal parameters. I am ready to assist you.";
@@ -640,7 +968,7 @@
     }
 
     function getPreset() {
-      return presets.find((preset) => preset.id === el.presetSelect.value) || presets[0];
+      return presets.find((preset) => preset.id === selectedPresetId) || presets[0];
     }
 
     function applyPresetToControls(preset) {
@@ -650,6 +978,80 @@
       el.pitchNum.value = preset.pitch;
       el.amp.value = preset.amp;
       el.ampNum.value = preset.amp;
+    }
+
+    function updateSelectedVoice() {
+      const preset = getPreset();
+      el.selectedVoiceName.textContent = cleanVoiceName(preset.label);
+      el.selectedVoiceMeta.textContent = preset.desc || preset.voice;
+    }
+
+    function renderVoiceList() {
+      const query = (el.voiceSearch.value || "").trim().toLowerCase();
+      const matches = presets.filter((preset) => {
+        const haystack = `${preset.label} ${preset.desc || ""} ${preset.voice}`.toLowerCase();
+        return haystack.includes(query);
+      });
+
+      el.voiceList.innerHTML = "";
+
+      if (!matches.length) {
+        const empty = document.createElement("div");
+        empty.className = "voice-empty";
+        empty.textContent = "No voices found.";
+        el.voiceList.appendChild(empty);
+        return;
+      }
+
+      matches.forEach((preset) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `voice-card${preset.id === selectedPresetId ? " is-selected" : ""}`;
+        button.innerHTML = `
+          <span>
+            <span class="voice-card-title">${escapeHtml(cleanVoiceName(preset.label))}</span>
+            <span class="voice-card-desc">${escapeHtml(preset.desc || "")}</span>
+            <span class="voice-card-code">${escapeHtml(preset.voice)}</span>
+          </span>
+          <span class="voice-card-check">${preset.id === selectedPresetId ? "✓" : ""}</span>
+        `;
+        button.addEventListener("click", () => {
+          selectedPresetId = preset.id;
+          applyPresetToControls(preset);
+          updateSelectedVoice();
+          renderVoiceList();
+          closeVoiceDrawer();
+        });
+        el.voiceList.appendChild(button);
+      });
+    }
+
+    function openVoiceDrawer() {
+      el.voiceOverlay.hidden = false;
+      requestAnimationFrame(() => {
+        document.body.classList.add("voice-drawer-open");
+        el.voiceOverlay.classList.add("is-open");
+        el.voiceDrawer.classList.add("is-open");
+        el.voiceDrawer.setAttribute("aria-hidden", "false");
+        setTimeout(() => el.voiceSearch.focus(), 160);
+      });
+    }
+
+    function closeVoiceDrawer() {
+      if (!el.voiceDrawer.classList.contains("is-open")) return;
+      document.body.classList.remove("voice-drawer-open");
+      el.voiceOverlay.classList.remove("is-open");
+      el.voiceDrawer.classList.remove("is-open");
+      el.voiceDrawer.setAttribute("aria-hidden", "true");
+      setTimeout(() => {
+        if (!el.voiceDrawer.classList.contains("is-open")) {
+          el.voiceOverlay.hidden = true;
+        }
+      }, 220);
+    }
+
+    function cleanVoiceName(label) {
+      return label.replace(/^EN\s+/i, "").replace(/^NL\s+/i, "").replace(/^DE\s+/i, "").replace(/^ES\s+/i, "");
     }
 
     function setStatus(message, isError = false) {
