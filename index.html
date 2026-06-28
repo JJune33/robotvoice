@@ -982,6 +982,112 @@
       gap: 8px;
     }
 
+
+    .engine-mode-lab {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(255,0,174,.18), rgba(255,255,255,.48), rgba(193,255,26,.18));
+      border: 1px solid rgba(10,10,10,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+    }
+
+    .engine-mode-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #0a0a0a;
+    }
+
+    .engine-mode-head span {
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .engine-mode-head small {
+      color: #050505;
+      background: linear-gradient(180deg, #d6ff68 0%, #c1ff1a 100%);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .engine-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .engine-mode-button {
+      padding: 11px 12px;
+      border-radius: 999px;
+      color: #0a0a0a;
+      background: rgba(255,255,255,.58);
+      border: 1px solid rgba(10,10,10,.12);
+      box-shadow: none;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .engine-mode-button.is-active {
+      color: #ffffff;
+      background: linear-gradient(180deg, #ff30bf 0%, #ff00ae 100%);
+      border-color: rgba(255,255,255,.24);
+      box-shadow: 0 12px 28px rgba(255,0,174,.18);
+    }
+
+    .engine-mode-meta {
+      color: rgba(0,0,0,.66);
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .vocoder-control {
+      display: none;
+      gap: 8px;
+    }
+
+    .vocoder-selected {
+      background:
+        linear-gradient(135deg, rgba(193,255,26,.26) 0%, rgba(255,255,255,.56) 48%, rgba(255,0,174,.22) 100%);
+    }
+
+    body.engine-vocoder .voice-control,
+    body.engine-vocoder .preset-lab {
+      display: none;
+    }
+
+    body.engine-vocoder .vocoder-control {
+      display: grid;
+    }
+
+    body.engine-vocoder .grid label:nth-child(1),
+    body.engine-vocoder .grid label:nth-child(2),
+    body.engine-vocoder .grid label:nth-child(3) {
+      display: none;
+    }
+
+    body.engine-vocoder #generateBtn,
+    body.engine-vocoder #demoBtn {
+      display: none;
+    }
+
+    .voice-card.is-vocoder .voice-card-code {
+      background: linear-gradient(180deg, #ff66ca 0%, #ff00ae 100%);
+      color: #ffffff;
+    }
+
     @media (max-width: 860px) {
       .hero-robot-stage {
         opacity: .28;
@@ -1066,6 +1172,22 @@
       <div id="voiceList" class="voice-list"></div>
     </aside>
 
+    <aside id="vocoderDrawer" class="voice-drawer vocoder-drawer" aria-hidden="true">
+      <div class="voice-drawer-head">
+        <div>
+          <p>Vocoder Rack</p>
+          <h2>Robo Phonix Vocoder Rack</h2>
+        </div>
+        <button id="closeVocoderDrawer" class="icon-button" type="button" aria-label="Close vocoder rack">×</button>
+      </div>
+
+      <div class="voice-search-wrap">
+        <input id="vocoderSearch" class="voice-search" type="search" placeholder="Search vocoder">
+      </div>
+
+      <div id="vocoderList" class="voice-list"></div>
+    </aside>
+
     
 <section class="hero">
       <div class="hero-grid"></div>
@@ -1109,6 +1231,20 @@
             <textarea id="textInput">Robo Phonix online. Voice engine stable. Robot synthesis ready for deployment.</textarea>
             <span class="hint">Kortere teksten genereren sneller. Voor lange scripts kun je per alinea exporteren.</span>
           </label>
+
+          <div class="engine-mode-lab">
+            <div class="engine-mode-head">
+              <span>Engine Mode</span>
+              <small id="engineModeBadge">Robot FX</small>
+            </div>
+
+            <div class="engine-toggle" role="group" aria-label="Engine mode">
+              <button id="robotModeBtn" class="engine-mode-button is-active" type="button" aria-pressed="true">Robot FX</button>
+              <button id="vocoderModeBtn" class="engine-mode-button" type="button" aria-pressed="false">Vocoder FX</button>
+            </div>
+
+            <small id="engineModeMeta" class="engine-mode-meta">Robot FX uses Voice Rack, text, upload and microphone.</small>
+          </div>
 
           <div class="audio-upload-lab">
             <div class="audio-upload-head">
@@ -1169,6 +1305,17 @@
               <button id="importCustomPresetsBtn" class="secondary micro-button" type="button">Import JSON</button>
               <input id="importCustomPresetsFile" type="file" accept="application/json,.json" hidden>
             </div>
+          </div>
+
+          <div class="vocoder-control">
+            <div class="voice-label">Vocoder</div>
+            <button id="openVocoderDrawer" class="voice-selected vocoder-selected" type="button">
+              <span>
+                <strong id="selectedVocoderName">Old School Rap Robot</strong>
+                <small id="selectedVocoderMeta">Classic synth carrier, punchy envelopes</small>
+              </span>
+              <em>Browse</em>
+            </button>
           </div>
 
           <div class="grid">
@@ -1720,6 +1867,117 @@
 
     const presets = voiceRecipes;
 
+    const vocoderRecipes = [
+      {
+        id: "vocoder-old-school-rap-robot",
+        label: "Old School Rap Robot",
+        desc: "Classic synth carrier, punchy envelopes",
+        tags: ["classic", "rap", "mono", "punchy"],
+        carrier: "saw-square",
+        baseFreq: 96,
+        bands: 16,
+        low: 90,
+        high: 5200,
+        attackMs: 8,
+        releaseMs: 82,
+        sibilance: .34,
+        dry: .04,
+        wet: .96,
+        drive: 1.28,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-electro-funk-droid",
+        label: "Electro Funk Droid",
+        desc: "Bright carrier with tight articulation",
+        tags: ["electro", "funk", "bright", "tight"],
+        carrier: "pulse-saw",
+        baseFreq: 118,
+        bands: 18,
+        low: 100,
+        high: 6200,
+        attackMs: 5,
+        releaseMs: 62,
+        sibilance: .42,
+        dry: .03,
+        wet: .97,
+        drive: 1.18,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-space-carrier",
+        label: "Space Carrier",
+        desc: "Wide sci-fi pad style vocoder",
+        tags: ["space", "wide", "smooth", "pad"],
+        carrier: "choir-saw",
+        baseFreq: 72,
+        bands: 20,
+        low: 80,
+        high: 5600,
+        attackMs: 14,
+        releaseMs: 150,
+        sibilance: .26,
+        dry: .05,
+        wet: .95,
+        drive: 1.08,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-mono-synth-robot",
+        label: "Mono Synth Robot",
+        desc: "Narrow, direct, synthetic voice",
+        tags: ["mono", "synth", "direct", "robot"],
+        carrier: "square",
+        baseFreq: 82,
+        bands: 14,
+        low: 110,
+        high: 4800,
+        attackMs: 6,
+        releaseMs: 70,
+        sibilance: .3,
+        dry: .02,
+        wet: .98,
+        drive: 1.35,
+        ceiling: .95
+      },
+      {
+        id: "vocoder-neon-choir-machine",
+        label: "Neon Choir Machine",
+        desc: "Layered carrier with softer release",
+        tags: ["choir", "neon", "smooth", "layered"],
+        carrier: "choir-saw",
+        baseFreq: 104,
+        bands: 20,
+        low: 90,
+        high: 6500,
+        attackMs: 10,
+        releaseMs: 128,
+        sibilance: .38,
+        dry: .06,
+        wet: .94,
+        drive: 1.12,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-cyber-operator",
+        label: "Cyber Operator",
+        desc: "Clean command voice with crisp edges",
+        tags: ["cyber", "operator", "clean", "crisp"],
+        carrier: "pulse-saw",
+        baseFreq: 132,
+        bands: 16,
+        low: 120,
+        high: 5900,
+        attackMs: 4,
+        releaseMs: 54,
+        sibilance: .46,
+        dry: .08,
+        wet: .92,
+        drive: 1.16,
+        ceiling: .96
+      }
+    ];
+
     const el = {
       textInput: document.querySelector("#textInput"),
       openVoiceDrawer: document.querySelector("#openVoiceDrawer"),
@@ -1728,6 +1986,17 @@
       voiceOverlay: document.querySelector("#voiceOverlay"),
       voiceSearch: document.querySelector("#voiceSearch"),
       voiceList: document.querySelector("#voiceList"),
+      vocoderDrawer: document.querySelector("#vocoderDrawer"),
+      closeVocoderDrawer: document.querySelector("#closeVocoderDrawer"),
+      openVocoderDrawer: document.querySelector("#openVocoderDrawer"),
+      vocoderSearch: document.querySelector("#vocoderSearch"),
+      vocoderList: document.querySelector("#vocoderList"),
+      selectedVocoderName: document.querySelector("#selectedVocoderName"),
+      selectedVocoderMeta: document.querySelector("#selectedVocoderMeta"),
+      robotModeBtn: document.querySelector("#robotModeBtn"),
+      vocoderModeBtn: document.querySelector("#vocoderModeBtn"),
+      engineModeBadge: document.querySelector("#engineModeBadge"),
+      engineModeMeta: document.querySelector("#engineModeMeta"),
       selectedVoiceName: document.querySelector("#selectedVoiceName"),
       selectedVoiceMeta: document.querySelector("#selectedVoiceMeta"),
       saveCustomPresetBtn: document.querySelector("#saveCustomPresetBtn"),
@@ -1767,6 +2036,8 @@
 
     let currentUrls = [];
     let selectedPresetId = "en-calm-space-ai";
+    let selectedVocoderId = "vocoder-old-school-rap-robot";
+    let engineMode = "robot";
     let customVoiceRecipes = [];
     let uploadedAudioFile = null;
     let recordedAudioFile = null;
@@ -1779,10 +2050,15 @@
     function init() {
       customVoiceRecipes = loadCustomVoiceRecipes();
       selectedPresetId = "en-calm-space-ai";
+      selectedVocoderId = "vocoder-old-school-rap-robot";
+      document.body.classList.add("engine-robot");
       renderVoiceList();
+      renderVocoderList();
       updateCustomPresetCount();
       applyPresetToControls(getPreset());
       updateSelectedVoice();
+      updateSelectedVocoder();
+      setEngineMode("robot");
 
       bindPair(el.speed, el.speedNum);
       bindPair(el.pitch, el.pitchNum);
@@ -1791,10 +2067,15 @@
 
       el.openVoiceDrawer.addEventListener("click", openVoiceDrawer);
       el.closeVoiceDrawer.addEventListener("click", closeVoiceDrawer);
-      el.voiceOverlay.addEventListener("click", closeVoiceDrawer);
+      el.openVocoderDrawer.addEventListener("click", openVocoderDrawer);
+      el.closeVocoderDrawer.addEventListener("click", closeVocoderDrawer);
+      el.voiceOverlay.addEventListener("click", closeAllDrawers);
       el.voiceSearch.addEventListener("input", renderVoiceList);
+      el.vocoderSearch.addEventListener("input", renderVocoderList);
+      el.robotModeBtn.addEventListener("click", () => setEngineMode("robot"));
+      el.vocoderModeBtn.addEventListener("click", () => setEngineMode("vocoder"));
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") closeVoiceDrawer();
+        if (event.key === "Escape") closeAllDrawers();
       });
 
       el.saveCustomPresetBtn.addEventListener("click", saveCurrentAsCustomPreset);
@@ -1900,7 +2181,112 @@
       });
     }
 
+    function getVocoderPreset() {
+      return vocoderRecipes.find((preset) => preset.id === selectedVocoderId) || vocoderRecipes[0];
+    }
+
+    function updateSelectedVocoder() {
+      const preset = getVocoderPreset();
+      el.selectedVocoderName.textContent = preset.label;
+      el.selectedVocoderMeta.textContent = preset.desc || preset.carrier;
+    }
+
+    function renderVocoderList() {
+      const query = (el.vocoderSearch.value || "").trim().toLowerCase();
+      const matches = vocoderRecipes.filter((preset) => {
+        const haystack = `${preset.label} ${preset.desc || ""} ${preset.carrier || ""} ${(preset.tags || []).join(" ")}`.toLowerCase();
+        return haystack.includes(query);
+      });
+
+      el.vocoderList.innerHTML = "";
+
+      if (!matches.length) {
+        const empty = document.createElement("div");
+        empty.className = "voice-empty";
+        empty.textContent = "No vocoders found.";
+        el.vocoderList.appendChild(empty);
+        return;
+      }
+
+      matches.forEach((preset) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `voice-card is-vocoder${preset.id === selectedVocoderId ? " is-selected" : ""}`;
+        button.innerHTML = `
+          <span>
+            <span class="voice-card-title">${escapeHtml(preset.label)}</span>
+            <span class="voice-card-desc">${escapeHtml(preset.desc || "")}</span>
+            <span class="voice-card-code">${escapeHtml(`${preset.bands} bands · ${preset.carrier}`)}</span>
+          </span>
+          <span class="voice-card-actions">
+            <span class="voice-card-check">${preset.id === selectedVocoderId ? "✓" : ""}</span>
+          </span>
+        `;
+
+        button.addEventListener("click", () => {
+          selectedVocoderId = preset.id;
+          updateSelectedVocoder();
+          renderVocoderList();
+          closeVocoderDrawer();
+        });
+
+        el.vocoderList.appendChild(button);
+      });
+    }
+
+    function setEngineMode(mode) {
+      engineMode = mode === "vocoder" ? "vocoder" : "robot";
+      document.body.classList.toggle("engine-robot", engineMode === "robot");
+      document.body.classList.toggle("engine-vocoder", engineMode === "vocoder");
+
+      el.robotModeBtn.classList.toggle("is-active", engineMode === "robot");
+      el.vocoderModeBtn.classList.toggle("is-active", engineMode === "vocoder");
+      el.robotModeBtn.setAttribute("aria-pressed", engineMode === "robot" ? "true" : "false");
+      el.vocoderModeBtn.setAttribute("aria-pressed", engineMode === "vocoder" ? "true" : "false");
+      el.engineModeBadge.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
+      el.engineModeMeta.textContent = engineMode === "vocoder"
+        ? "Vocoder FX uses its own Vocoder Rack and is meant for upload and microphone."
+        : "Robot FX uses Voice Rack, text, upload and microphone.";
+
+      updateProcessButtonLabels();
+      refreshAudioAndRecordingHints();
+      closeAllDrawers();
+    }
+
+    function updateProcessButtonLabels() {
+      if (!el.processAudioBtn.disabled || uploadedAudioFile) {
+        el.processAudioBtn.textContent = engineMode === "vocoder" ? "Vocode audio" : "Robotize audio";
+      } else {
+        el.processAudioBtn.textContent = engineMode === "vocoder" ? "Vocode audio" : "Robotize audio";
+      }
+
+      if (!el.processRecordingBtn.disabled || recordedAudioFile) {
+        el.processRecordingBtn.textContent = engineMode === "vocoder" ? "Vocode recording" : "Robotize recording";
+      } else {
+        el.processRecordingBtn.textContent = engineMode === "vocoder" ? "Vocode recording" : "Robotize recording";
+      }
+    }
+
+    function refreshAudioAndRecordingHints() {
+      if (!uploadedAudioFile) {
+        el.audioUploadMeta.textContent = engineMode === "vocoder"
+          ? "Use the selected vocoder preset as carrier engine"
+          : "Use the selected voice preset as robot FX chain";
+      } else {
+        el.audioUploadMeta.textContent = `${formatBytes(uploadedAudioFile.size)} · ready for ${engineMode === "vocoder" ? "vocoder FX" : "robot FX"}`;
+      }
+
+      if (!recordedAudioFile && (!mediaRecorder || mediaRecorder.state === "inactive")) {
+        el.recordingMeta.textContent = engineMode === "vocoder"
+          ? "Record your voice, then vocode it with the selected vocoder preset"
+          : "Record your voice, then robotize it with the selected preset";
+      } else if (recordedAudioFile) {
+        el.recordingMeta.textContent = `${formatBytes(recordedAudioFile.size)} · ready for ${engineMode === "vocoder" ? "vocoder FX" : "robot FX"}`;
+      }
+    }
+
     function openVoiceDrawer() {
+      closeVocoderDrawer(true);
       el.voiceOverlay.hidden = false;
       requestAnimationFrame(() => {
         document.body.classList.add("voice-drawer-open");
@@ -1911,14 +2297,43 @@
       });
     }
 
-    function closeVoiceDrawer() {
+    function closeVoiceDrawer(skipOverlay = false) {
       if (!el.voiceDrawer.classList.contains("is-open")) return;
-      document.body.classList.remove("voice-drawer-open");
-      el.voiceOverlay.classList.remove("is-open");
       el.voiceDrawer.classList.remove("is-open");
       el.voiceDrawer.setAttribute("aria-hidden", "true");
+      if (!skipOverlay) scheduleOverlayClose();
+    }
+
+    function openVocoderDrawer() {
+      closeVoiceDrawer(true);
+      el.voiceOverlay.hidden = false;
+      requestAnimationFrame(() => {
+        document.body.classList.add("voice-drawer-open");
+        el.voiceOverlay.classList.add("is-open");
+        el.vocoderDrawer.classList.add("is-open");
+        el.vocoderDrawer.setAttribute("aria-hidden", "false");
+        setTimeout(() => el.vocoderSearch.focus(), 160);
+      });
+    }
+
+    function closeVocoderDrawer(skipOverlay = false) {
+      if (!el.vocoderDrawer.classList.contains("is-open")) return;
+      el.vocoderDrawer.classList.remove("is-open");
+      el.vocoderDrawer.setAttribute("aria-hidden", "true");
+      if (!skipOverlay) scheduleOverlayClose();
+    }
+
+    function closeAllDrawers() {
+      closeVoiceDrawer(true);
+      closeVocoderDrawer(true);
+      scheduleOverlayClose();
+    }
+
+    function scheduleOverlayClose() {
+      document.body.classList.remove("voice-drawer-open");
+      el.voiceOverlay.classList.remove("is-open");
       setTimeout(() => {
-        if (!el.voiceDrawer.classList.contains("is-open")) {
+        if (!el.voiceDrawer.classList.contains("is-open") && !el.vocoderDrawer.classList.contains("is-open")) {
           el.voiceOverlay.hidden = true;
         }
       }, 220);
@@ -2132,7 +2547,7 @@
     function setUploadedAudioFile(file) {
       uploadedAudioFile = file;
       el.audioUploadTitle.textContent = file.name;
-      el.audioUploadMeta.textContent = `${formatBytes(file.size)} · ready for robot FX`;
+      el.audioUploadMeta.textContent = `${formatBytes(file.size)} · ready for ${engineMode === "vocoder" ? "vocoder FX" : "robot FX"}`;
       el.processAudioBtn.disabled = false;
       el.clearAudioBtn.disabled = false;
       setStatus("<strong>Audio loaded.</strong> Choose a voice preset and click Robotize audio.");
@@ -2142,7 +2557,7 @@
       uploadedAudioFile = null;
       el.audioUploadInput.value = "";
       el.audioUploadTitle.textContent = "Drop or choose audio";
-      el.audioUploadMeta.textContent = "Use the selected voice preset as robot FX chain";
+      el.audioUploadMeta.textContent = engineMode === "vocoder" ? "Use the selected vocoder preset as carrier engine" : "Use the selected voice preset as robot FX chain";
       el.processAudioBtn.disabled = true;
       el.clearAudioBtn.disabled = true;
       setStatus("<strong>Cleared.</strong> Audio upload removed.");
@@ -2154,7 +2569,8 @@
         return;
       }
 
-      const preset = getPreset();
+      const isVocoder = engineMode === "vocoder";
+      const preset = isVocoder ? getVocoderPreset() : getPreset();
       const kbps = clampInt(el.kbps.value, 64, 192);
 
       try {
@@ -2165,10 +2581,16 @@
         const decoded = await decodeUploadedAudioFile(uploadedAudioFile);
         const mono = mixAudioBufferToMono(decoded);
 
-        setStatus("<strong>Step 2 of 3.</strong> Applying preset voice shaping and robot FX.");
+        let processed;
+        if (isVocoder) {
+          setStatus("<strong>Step 2 of 3.</strong> Applying vocoder carrier engine.");
+          processed = applyVocoderFx(mono, decoded.sampleRate, preset);
+        } else {
+          setStatus("<strong>Step 2 of 3.</strong> Applying preset voice shaping and robot FX.");
+          const shaped = applyExternalPresetShaping(mono, decoded.sampleRate, preset);
+          processed = applyRobotFx(shaped.samples, decoded.sampleRate, preset.fx);
+        }
 
-        const shaped = applyExternalPresetShaping(mono, decoded.sampleRate, preset);
-        const processed = applyRobotFx(shaped.samples, decoded.sampleRate, preset.fx);
         const int16 = floatToInt16(processed);
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
@@ -2189,7 +2611,7 @@
         el.downloadWav.classList.remove("disabled");
 
         const seconds = (int16.length / decoded.sampleRate).toFixed(1);
-        setStatus(`<strong>Ready.</strong> Robotized audio: ${seconds} sec · MP3 ${kbps} kbps.`);
+        setStatus(`<strong>Ready.</strong> ${isVocoder ? "Vocoded" : "Robotized"} audio: ${seconds} sec · MP3 ${kbps} kbps.`);
       } catch (error) {
         console.error(error);
         setStatus(`<strong>Audio failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
@@ -2234,7 +2656,7 @@
     function lockAudioUi(isLocked) {
       el.processAudioBtn.disabled = isLocked || !uploadedAudioFile;
       el.clearAudioBtn.disabled = isLocked || !uploadedAudioFile;
-      el.processAudioBtn.textContent = isLocked ? "Processing..." : "Robotize audio";
+      el.processAudioBtn.textContent = isLocked ? "Processing..." : (engineMode === "vocoder" ? "Vocode audio" : "Robotize audio");
     }
 
     function formatBytes(bytes) {
@@ -2252,12 +2674,13 @@
     }
 
     function makeAudioRobotizerFileName(extension) {
-      const preset = getPreset().id;
+      const preset = engineMode === "vocoder" ? getVocoderPreset().id : getPreset().id;
+      const label = engineMode === "vocoder" ? "vocoded" : "robotized";
       const base = uploadedAudioFile?.name
         ? uploadedAudioFile.name.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase()
         : "audio";
       const stamp = new Date().toISOString().slice(0, 10);
-      return `${base}_${preset}_robotized_${stamp}.${extension}`;
+      return `${base}_${preset}_${label}_${stamp}.${extension}`;
     }
 
     async function startMicRecording() {
@@ -2330,7 +2753,7 @@
       recordedAudioFile = new File([blob], `robo-phonix-recording.${extension}`, { type: mimeType });
 
       el.recordingTitle.textContent = "Recording ready";
-      el.recordingMeta.textContent = `${formatBytes(recordedAudioFile.size)} · ready for robot FX`;
+      el.recordingMeta.textContent = `${formatBytes(recordedAudioFile.size)} · ready for ${engineMode === "vocoder" ? "vocoder FX" : "robot FX"}`;
       el.startRecordingBtn.disabled = false;
       el.stopRecordingBtn.disabled = true;
       el.processRecordingBtn.disabled = false;
@@ -2353,7 +2776,7 @@
       mediaRecorder = null;
 
       el.recordingTitle.textContent = "No recording yet";
-      el.recordingMeta.textContent = "Record your voice, then robotize it with the selected preset";
+      el.recordingMeta.textContent = engineMode === "vocoder" ? "Record your voice, then vocode it with the selected vocoder preset" : "Record your voice, then robotize it with the selected preset";
       el.recordingTimer.textContent = "00:00";
       el.startRecordingBtn.disabled = false;
       el.stopRecordingBtn.disabled = true;
@@ -2372,7 +2795,8 @@
         return;
       }
 
-      const preset = getPreset();
+      const isVocoder = engineMode === "vocoder";
+      const preset = isVocoder ? getVocoderPreset() : getPreset();
       const kbps = clampInt(el.kbps.value, 64, 192);
 
       try {
@@ -2383,10 +2807,16 @@
         const decoded = await decodeUploadedAudioFile(recordedAudioFile);
         const mono = mixAudioBufferToMono(decoded);
 
-        setStatus("<strong>Step 2 of 3.</strong> Applying preset voice shaping and robot FX.");
+        let processed;
+        if (isVocoder) {
+          setStatus("<strong>Step 2 of 3.</strong> Applying vocoder carrier engine.");
+          processed = applyVocoderFx(mono, decoded.sampleRate, preset);
+        } else {
+          setStatus("<strong>Step 2 of 3.</strong> Applying preset voice shaping and robot FX.");
+          const shaped = applyExternalPresetShaping(mono, decoded.sampleRate, preset);
+          processed = applyRobotFx(shaped.samples, decoded.sampleRate, preset.fx);
+        }
 
-        const shaped = applyExternalPresetShaping(mono, decoded.sampleRate, preset);
-        const processed = applyRobotFx(shaped.samples, decoded.sampleRate, preset.fx);
         const int16 = floatToInt16(processed);
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
@@ -2407,7 +2837,7 @@
         el.downloadWav.classList.remove("disabled");
 
         const seconds = (int16.length / decoded.sampleRate).toFixed(1);
-        setStatus(`<strong>Ready.</strong> Robotized recording: ${seconds} sec · MP3 ${kbps} kbps.`);
+        setStatus(`<strong>Ready.</strong> ${isVocoder ? "Vocoded" : "Robotized"} recording: ${seconds} sec · MP3 ${kbps} kbps.`);
       } catch (error) {
         console.error(error);
         setStatus(`<strong>Recording failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
@@ -2421,7 +2851,7 @@
       el.stopRecordingBtn.disabled = true;
       el.processRecordingBtn.disabled = isLocked || !recordedAudioFile;
       el.clearRecordingBtn.disabled = isLocked || !recordedAudioFile;
-      el.processRecordingBtn.textContent = isLocked ? "Processing..." : "Robotize recording";
+      el.processRecordingBtn.textContent = isLocked ? "Processing..." : (engineMode === "vocoder" ? "Vocode recording" : "Robotize recording");
     }
 
     function pickSupportedRecordingMimeType() {
@@ -2481,12 +2911,18 @@
     }
 
     function makeRecordingRobotizerFileName(extension) {
-      const preset = getPreset().id;
+      const preset = engineMode === "vocoder" ? getVocoderPreset().id : getPreset().id;
+      const label = engineMode === "vocoder" ? "vocoded" : "robotized";
       const stamp = new Date().toISOString().slice(0, 10);
-      return `mic-recording_${preset}_robotized_${stamp}.${extension}`;
+      return `mic-recording_${preset}_${label}_${stamp}.${extension}`;
     }
 
     async function generate() {
+      if (engineMode === "vocoder") {
+        setStatus("<strong>Vocoder FX.</strong> Use upload or microphone for vocoder processing. Switch to Robot FX for text to speech.", true);
+        return;
+      }
+
       const text = el.textInput.value.trim();
       if (!text) {
         setStatus("<strong>Geen tekst.</strong> Vul eerst tekst in.", true);
@@ -2702,6 +3138,124 @@
 
       for (let i = 0; i < input.length; i++) {
         output[i] = clamp(input[i] * g, -1, 1);
+      }
+
+      return output;
+    }
+
+    function applyVocoderFx(input, sampleRate, recipe = {}) {
+      const length = input.length;
+      const bands = clampInt(recipe.bands || 16, 6, 24);
+      const low = clamp(Number(recipe.low) || 90, 60, 500);
+      const highLimit = Math.max(1000, Math.min(sampleRate / 2 - 200, Number(recipe.high) || 5200));
+      const high = clamp(highLimit, low + 600, Math.min(9000, sampleRate / 2 - 100));
+      const wet = clamp(Number(recipe.wet) ?? .96, 0, 1);
+      const dry = clamp(Number(recipe.dry) ?? .04, 0, .35);
+      const drive = clamp(Number(recipe.drive) || 1.1, .6, 2.2);
+      const ceiling = clamp(Number(recipe.ceiling) || .96, .7, .99);
+
+      const modulator = highpass(input, sampleRate, 55);
+      const carrier = buildVocoderCarrier(length, sampleRate, recipe);
+      const bandEdges = makeLogBandEdges(low, high, bands);
+      const output = new Float32Array(length);
+
+      for (let band = 0; band < bands; band++) {
+        const bandLow = bandEdges[band];
+        const bandHigh = bandEdges[band + 1];
+        const modBand = bandpass(modulator, sampleRate, bandLow, bandHigh);
+        const carBand = bandpass(carrier, sampleRate, bandLow, bandHigh);
+        const env = envelopeFollower(modBand, sampleRate, recipe.attackMs || 8, recipe.releaseMs || 80);
+        const weight = 1.8 / Math.sqrt(bands);
+
+        for (let i = 0; i < length; i++) {
+          output[i] += carBand[i] * env[i] * weight;
+        }
+      }
+
+      const sibilance = clamp(Number(recipe.sibilance) || 0, 0, .8);
+      if (sibilance) {
+        const sibSource = highpass(modulator, sampleRate, Math.min(5200, high * .72));
+        const sibEnv = envelopeFollower(sibSource, sampleRate, 2, 42);
+        let noise = 0;
+        for (let i = 0; i < length; i++) {
+          noise = noise * .72 + (Math.random() * 2 - 1) * .28;
+          output[i] += noise * sibEnv[i] * sibilance * .75;
+        }
+      }
+
+      for (let i = 0; i < length; i++) {
+        const x = output[i] * wet + input[i] * dry;
+        output[i] = softClip(x * drive);
+      }
+
+      const normalized = normalize(output, ceiling);
+      return brickwallLimiter(normalized, ceiling);
+    }
+
+    function buildVocoderCarrier(length, sampleRate, recipe) {
+      const output = new Float32Array(length);
+      const baseFreq = clamp(Number(recipe.baseFreq) || 96, 40, 260);
+      const type = recipe.carrier || "saw-square";
+      let p1 = 0;
+      let p2 = .18;
+      let p3 = .37;
+      let noise = 0;
+
+      for (let i = 0; i < length; i++) {
+        p1 = (p1 + baseFreq / sampleRate) % 1;
+        p2 = (p2 + (baseFreq * 1.5) / sampleRate) % 1;
+        p3 = (p3 + (baseFreq * 2.01) / sampleRate) % 1;
+
+        let x;
+        if (type === "square") {
+          x = osc("square", p1) * .78 + osc("square", p2) * .22;
+        } else if (type === "pulse-saw") {
+          x = osc("pulse", p1) * .56 + osc("saw", p2) * .32 + osc("square", p3) * .12;
+        } else if (type === "choir-saw") {
+          x = osc("saw", p1) * .42 + osc("triangle", p2) * .34 + osc("saw", p3) * .24;
+        } else {
+          x = osc("saw", p1) * .58 + osc("square", p2) * .3 + osc("triangle", p3) * .12;
+        }
+
+        noise = noise * .94 + (Math.random() * 2 - 1) * .06;
+        output[i] = clamp(x * .82 + noise * .08, -1, 1);
+      }
+
+      return output;
+    }
+
+    function osc(type, phase) {
+      if (type === "square") return phase < .5 ? 1 : -1;
+      if (type === "pulse") return phase < .32 ? 1 : -1;
+      if (type === "triangle") return 1 - 4 * Math.abs(Math.round(phase - .25) - (phase - .25));
+      return phase * 2 - 1;
+    }
+
+    function makeLogBandEdges(low, high, bands) {
+      const edges = [];
+      const ratio = Math.pow(high / low, 1 / bands);
+      for (let i = 0; i <= bands; i++) {
+        edges.push(low * Math.pow(ratio, i));
+      }
+      return edges;
+    }
+
+    function bandpass(input, sampleRate, low, high) {
+      const hi = lowpass(input, sampleRate, high);
+      return highpass(hi, sampleRate, low);
+    }
+
+    function envelopeFollower(input, sampleRate, attackMs, releaseMs) {
+      const output = new Float32Array(input.length);
+      const attack = Math.exp(-1 / (sampleRate * Math.max(1, attackMs) / 1000));
+      const release = Math.exp(-1 / (sampleRate * Math.max(1, releaseMs) / 1000));
+      let env = 0;
+
+      for (let i = 0; i < input.length; i++) {
+        const value = Math.abs(input[i]);
+        const coeff = value > env ? attack : release;
+        env = coeff * env + (1 - coeff) * value;
+        output[i] = Math.sqrt(env);
       }
 
       return output;
