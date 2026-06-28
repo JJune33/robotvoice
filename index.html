@@ -1869,211 +1869,211 @@
 
     const vocoderRecipes = [
       {
-        id: "vocoder-classic-rap-talkbot",
-        label: "Classic Rap Talkbot",
-        desc: "Dry mono saw carrier, focused on words",
-        tags: ["classic", "rap", "mono", "talkbot"],
-        carrier: "classic-saw",
-        baseFreq: 98,
-        bands: 24,
-        low: 90,
-        high: 7200,
-        attackMs: 1.2,
-        releaseMs: 62,
-        resonance: 1.9,
-        envBoost: 5.4,
-        envCurve: .42,
-        bandTilt: .28,
-        wet: .94,
-        guide: .055,
-        consonants: .16,
-        sibilance: .12,
-        gate: .82,
-        carrierDrive: 1.55,
-        postDrive: 1.32,
-        clarity: .26,
+        id: "vocoder-true-talkbot-core",
+        label: "True Talkbot Core",
+        desc: "Dense pulse carrier, speech bands drive the synth",
+        tags: ["classic", "talkbot", "clear", "mono"],
+        carrier: "pulse-train",
+        baseFreq: 105,
+        bands: 20,
+        low: 85,
+        high: 7600,
+        attackMs: 1.8,
+        releaseMs: 58,
+        analysisQ: 1.05,
+        synthQ: .52,
+        depth: 1.08,
+        gate: .5,
+        bandFloor: .018,
+        bandFill: .18,
+        guide: .018,
+        consonants: .09,
+        unvoiced: .12,
+        brightness: .28,
+        carrierDrive: 1.02,
+        outputDrive: 1.02,
         ceiling: .96
       },
       {
-        id: "vocoder-intergalactic-style-bot",
-        label: "Intergalactic Style Bot",
-        desc: "Hard pulse/square 90s rap vocoder direction",
-        tags: ["rap", "hard", "pulse", "direct"],
-        carrier: "hard-pulse",
-        baseFreq: 116,
-        bands: 22,
+        id: "vocoder-intergalactic-rap-bot",
+        label: "Intergalactic Rap Bot",
+        desc: "Hard pulse/square carrier with tight rap articulation",
+        tags: ["rap", "hard", "pulse", "robot"],
+        carrier: "hard-sync-pulse",
+        baseFreq: 118,
+        bands: 18,
         low: 95,
-        high: 7600,
-        attackMs: .8,
-        releaseMs: 48,
-        resonance: 2.15,
-        envBoost: 5.8,
-        envCurve: .38,
-        bandTilt: .36,
-        wet: .95,
-        guide: .04,
-        consonants: .18,
-        sibilance: .11,
-        gate: .86,
-        carrierDrive: 1.75,
-        postDrive: 1.46,
-        clarity: .32,
-        ceiling: .95
+        high: 8000,
+        attackMs: 1.0,
+        releaseMs: 42,
+        analysisQ: 1.12,
+        synthQ: .46,
+        depth: 1.18,
+        gate: .62,
+        bandFloor: .012,
+        bandFill: .2,
+        guide: .012,
+        consonants: .08,
+        unvoiced: .1,
+        brightness: .38,
+        carrierDrive: 1.08,
+        outputDrive: 1.04,
+        ceiling: .96
       },
       {
-        id: "vocoder-mono-square-robot",
-        label: "Mono Square Robot",
-        desc: "Hard square carrier with strong vowel blocks",
-        tags: ["square", "mono", "robot", "hard"],
-        carrier: "mono-square",
-        baseFreq: 82,
-        bands: 20,
-        low: 100,
-        high: 6400,
+        id: "vocoder-mono-square-talker",
+        label: "Mono Square Talker",
+        desc: "Square wave bank, direct vowel blocks, minimal noise",
+        tags: ["square", "mono", "talk", "robot"],
+        carrier: "square-bank",
+        baseFreq: 90,
+        bands: 18,
+        low: 90,
+        high: 6800,
         attackMs: 1.5,
-        releaseMs: 58,
-        resonance: 2.0,
-        envBoost: 5.2,
-        envCurve: .4,
-        bandTilt: .18,
-        wet: .95,
-        guide: .05,
-        consonants: .13,
-        sibilance: .08,
-        gate: .84,
-        carrierDrive: 1.7,
-        postDrive: 1.38,
-        clarity: .24,
-        ceiling: .95
+        releaseMs: 54,
+        analysisQ: 1.0,
+        synthQ: .5,
+        depth: 1.1,
+        gate: .54,
+        bandFloor: .016,
+        bandFill: .22,
+        guide: .016,
+        consonants: .07,
+        unvoiced: .08,
+        brightness: .22,
+        carrierDrive: 1.05,
+        outputDrive: 1.02,
+        ceiling: .96
       },
       {
-        id: "vocoder-electro-funk-droid",
-        label: "Electro Funk Droid",
-        desc: "Bright pulse carrier, tight consonants",
-        tags: ["electro", "funk", "bright", "talk"],
+        id: "vocoder-electro-funk-carrier",
+        label: "Electro Funk Carrier",
+        desc: "Bright pulse vocoder, fast consonants, less fuzz",
+        tags: ["electro", "funk", "bright", "carrier"],
         carrier: "funk-pulse",
         baseFreq: 132,
+        bands: 22,
+        low: 105,
+        high: 8600,
+        attackMs: .8,
+        releaseMs: 34,
+        analysisQ: 1.05,
+        synthQ: .44,
+        depth: 1.2,
+        gate: .66,
+        bandFloor: .01,
+        bandFill: .2,
+        guide: .012,
+        consonants: .1,
+        unvoiced: .13,
+        brightness: .45,
+        carrierDrive: 1.04,
+        outputDrive: 1.0,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-deep-bass-robot",
+        label: "Deep Bass Robot",
+        desc: "Low robotic carrier with stronger mouth movement",
+        tags: ["deep", "bass", "robot", "talk"],
+        carrier: "deep-pulse",
+        baseFreq: 62,
+        bands: 18,
+        low: 70,
+        high: 6200,
+        attackMs: 2.2,
+        releaseMs: 74,
+        analysisQ: .95,
+        synthQ: .5,
+        depth: 1.04,
+        gate: .45,
+        bandFloor: .022,
+        bandFill: .16,
+        guide: .022,
+        consonants: .07,
+        unvoiced: .08,
+        brightness: .16,
+        carrierDrive: 1.08,
+        outputDrive: 1.05,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-cyber-speech-bank",
+        label: "Cyber Speech Bank",
+        desc: "Clearer modern channel vocoder with sharper edges",
+        tags: ["cyber", "speech", "clear", "bank"],
+        carrier: "clean-saw-bank",
+        baseFreq: 148,
         bands: 24,
         low: 105,
-        high: 8200,
+        high: 9000,
         attackMs: .7,
-        releaseMs: 38,
-        resonance: 1.85,
-        envBoost: 6.0,
-        envCurve: .36,
-        bandTilt: .45,
-        wet: .94,
-        guide: .045,
-        consonants: .2,
-        sibilance: .13,
-        gate: .9,
-        carrierDrive: 1.5,
-        postDrive: 1.28,
-        clarity: .38,
+        releaseMs: 30,
+        analysisQ: 1.05,
+        synthQ: .42,
+        depth: 1.22,
+        gate: .7,
+        bandFloor: .008,
+        bandFill: .24,
+        guide: .01,
+        consonants: .11,
+        unvoiced: .12,
+        brightness: .52,
+        carrierDrive: 1.0,
+        outputDrive: .98,
         ceiling: .96
       },
       {
-        id: "vocoder-deep-bass-talkbox",
-        label: "Deep Bass Talkbox",
-        desc: "Low carrier, thick robot vowels, controlled air",
-        tags: ["deep", "bass", "talkbox", "robot"],
-        carrier: "deep-saw",
-        baseFreq: 58,
-        bands: 20,
-        low: 75,
-        high: 6200,
-        attackMs: 2.0,
-        releaseMs: 72,
-        resonance: 2.05,
-        envBoost: 5.0,
-        envCurve: .44,
-        bandTilt: .08,
-        wet: .95,
-        guide: .06,
-        consonants: .12,
-        sibilance: .08,
-        gate: .78,
-        carrierDrive: 1.85,
-        postDrive: 1.38,
-        clarity: .18,
-        ceiling: .95
-      },
-      {
-        id: "vocoder-cyber-speak-carrier",
-        label: "Cyber Speak Carrier",
-        desc: "Clean modern robot voice, less noise, more bite",
-        tags: ["cyber", "clean", "speech", "carrier"],
-        carrier: "clean-saw-pulse",
-        baseFreq: 146,
-        bands: 26,
-        low: 100,
-        high: 8500,
-        attackMs: .6,
-        releaseMs: 34,
-        resonance: 1.7,
-        envBoost: 5.7,
-        envCurve: .34,
-        bandTilt: .5,
-        wet: .93,
-        guide: .05,
-        consonants: .17,
-        sibilance: .09,
-        gate: .92,
-        carrierDrive: 1.42,
-        postDrive: 1.24,
-        clarity: .42,
-        ceiling: .96
-      },
-      {
-        id: "vocoder-dual-osc-droid",
-        label: "Dual Osc Droid",
-        desc: "Two oscillator robotic tone with readable vowels",
-        tags: ["dual", "osc", "droid", "vowel"],
+        id: "vocoder-dual-osc-talkdroid",
+        label: "Dual Osc Talkdroid",
+        desc: "Two oscillator carrier, more musical but still speech led",
+        tags: ["dual", "osc", "droid", "musical"],
         carrier: "dual-osc",
         baseFreq: 104,
-        bands: 22,
-        low: 90,
-        high: 7300,
-        attackMs: 1.1,
-        releaseMs: 54,
-        resonance: 1.95,
-        envBoost: 5.4,
-        envCurve: .4,
-        bandTilt: .27,
-        wet: .94,
-        guide: .055,
-        consonants: .15,
-        sibilance: .09,
-        gate: .84,
-        carrierDrive: 1.6,
-        postDrive: 1.32,
-        clarity: .28,
+        bands: 20,
+        low: 85,
+        high: 7400,
+        attackMs: 1.4,
+        releaseMs: 56,
+        analysisQ: 1.02,
+        synthQ: .5,
+        depth: 1.08,
+        gate: .52,
+        bandFloor: .018,
+        bandFill: .18,
+        guide: .018,
+        consonants: .08,
+        unvoiced: .1,
+        brightness: .3,
+        carrierDrive: 1.04,
+        outputDrive: 1.02,
         ceiling: .96
       },
       {
-        id: "vocoder-neon-choir-machine",
-        label: "Neon Choir Machine",
-        desc: "Richer chord carrier, still speech driven",
-        tags: ["choir", "chord", "neon", "machine"],
+        id: "vocoder-neon-chord-robot",
+        label: "Neon Chord Robot",
+        desc: "Chord style robot carrier, smoother and less direct",
+        tags: ["chord", "neon", "smooth", "robot"],
         carrier: "robot-chord",
         baseFreq: 96,
-        bands: 24,
+        bands: 22,
         low: 85,
         high: 7800,
-        attackMs: 2.5,
-        releaseMs: 88,
-        resonance: 1.55,
-        envBoost: 4.8,
-        envCurve: .48,
-        bandTilt: .32,
-        wet: .92,
-        guide: .065,
-        consonants: .13,
-        sibilance: .08,
-        gate: .72,
-        carrierDrive: 1.28,
-        postDrive: 1.18,
-        clarity: .32,
+        attackMs: 2.8,
+        releaseMs: 92,
+        analysisQ: .92,
+        synthQ: .56,
+        depth: .96,
+        gate: .38,
+        bandFloor: .028,
+        bandFill: .14,
+        guide: .024,
+        consonants: .08,
+        unvoiced: .1,
+        brightness: .28,
+        carrierDrive: .98,
+        outputDrive: 1.0,
         ceiling: .96
       }
     ];
@@ -3245,187 +3245,173 @@
 
     function applyVocoderFx(input, sampleRate, recipe = {}) {
       const length = input.length;
-      const bands = clampInt(recipe.bands || 22, 14, 30);
+      if (!length) return input;
+
+      const bands = clampInt(recipe.bands || 20, 12, 32);
       const low = clamp(Number(recipe.low) || 90, 55, 500);
-      const maxHigh = Math.min(sampleRate / 2 - 160, 9000);
-      const high = clamp(Number(recipe.high) || 7200, low + 1000, maxHigh);
-      const wet = clamp(Number(recipe.wet) ?? .94, 0, 1);
-      const guide = clamp(Number(recipe.guide) ?? .05, 0, .16);
-      const consonants = clamp(Number(recipe.consonants) ?? .15, 0, .32);
-      const sibilance = clamp(Number(recipe.sibilance) ?? .1, 0, .28);
-      const gateAmount = clamp(Number(recipe.gate) ?? .84, 0, 1);
-      const resonance = clamp(Number(recipe.resonance) || 1.9, .9, 3.2);
-      const envBoost = clamp(Number(recipe.envBoost) || 5.4, 1.8, 8);
-      const envCurve = clamp(Number(recipe.envCurve) || .4, .24, .78);
-      const bandTilt = clamp(Number(recipe.bandTilt) || .25, -.35, .75);
-      const postDrive = clamp(Number(recipe.postDrive) || 1.28, .7, 2.4);
-      const clarity = clamp(Number(recipe.clarity) || .28, 0, .65);
+      const maxHigh = Math.min(sampleRate / 2 - 180, 10000);
+      const high = clamp(Number(recipe.high) || 7600, low + 1200, maxHigh);
+      const attackMs = clamp(Number(recipe.attackMs) || 1.5, .35, 12);
+      const releaseMs = clamp(Number(recipe.releaseMs) || 52, 12, 180);
+      const analysisQ = clamp(Number(recipe.analysisQ) || 1.05, .55, 2.2);
+      const synthQ = clamp(Number(recipe.synthQ) || .5, .28, 1.4);
+      const depth = clamp(Number(recipe.depth) || 1.08, .55, 1.65);
+      const gateAmount = clamp(Number(recipe.gate) ?? .54, 0, .9);
+      const bandFloor = clamp(Number(recipe.bandFloor) ?? .016, 0, .08);
+      const bandFill = clamp(Number(recipe.bandFill) ?? .18, 0, .45);
+      const guide = clamp(Number(recipe.guide) ?? .016, 0, .06);
+      const consonants = clamp(Number(recipe.consonants) ?? .08, 0, .18);
+      const unvoiced = clamp(Number(recipe.unvoiced) ?? .1, 0, .2);
+      const brightness = clamp(Number(recipe.brightness) ?? .3, 0, .7);
+      const outputDrive = clamp(Number(recipe.outputDrive) || 1, .7, 1.35);
       const ceiling = clamp(Number(recipe.ceiling) || .96, .72, .99);
 
-      const prepared = prepareClassicVocoderInput(input, sampleRate, high);
-      const carrier = buildClassicVocoderCarrier(length, sampleRate, recipe);
+      const prepared = prepareTrueVocoderInput(input, sampleRate, high);
+      const carrier = buildDenseVocoderCarrier(length, sampleRate, recipe);
       const bandEdges = makeLogBandEdges(low, high, bands);
-      const out = new Float32Array(length);
+      const output = new Float32Array(length);
 
-      const broadbandEnv = classicRmsEnvelope(prepared.modulator, sampleRate, 2, 105);
-      const speechGate = makeClassicSpeechGate(broadbandEnv, gateAmount);
-      const consonantMask = makeUnvoicedMask(prepared.modulator, sampleRate);
+      const broadEnv = trueEnvelope(prepared.modulator, sampleRate, 1.2, 120);
+      const speechGate = makeTrueSpeechGate(broadEnv, gateAmount);
+      const unvoicedMask = makeTrueUnvoicedMask(prepared.modulator, sampleRate);
 
       for (let band = 0; band < bands; band++) {
         const bandLow = bandEdges[band];
         const bandHigh = bandEdges[band + 1];
         const center = Math.sqrt(bandLow * bandHigh);
         const pos = band / Math.max(1, bands - 1);
-        const q = clamp(resonance + pos * .45, .85, 3.4);
+        const analysisBand = trueVocoderBandpass(prepared.modulator, sampleRate, center, analysisQ + pos * .22);
+        const env = trueEnvelope(analysisBand, sampleRate, attackMs, releaseMs);
+        const shapedEnv = trueEnvelopeShape(env, depth, bandFloor);
 
-        const modBand = classicVocoderBandpass(prepared.modulator, sampleRate, center, q * .95);
-        const carBand = classicVocoderBandpass(carrier, sampleRate, center, q);
-        const env = classicRmsEnvelope(modBand, sampleRate, recipe.attackMs || 1.2, recipe.releaseMs || 55);
-        const shapedEnv = shapeBandEnvelope(env, envBoost, envCurve, .015);
+        const synthBand = trueVocoderBandpass(carrier, sampleRate, center, synthQ + pos * .08);
+        const localCarrier = buildLocalBandCarrier(length, sampleRate, center, pos, recipe);
+        const bandGain = (1.05 + pos * brightness * .55) / Math.sqrt(bands * .56);
 
-        const bandWeight = (1.05 + pos * bandTilt) / Math.sqrt(bands * .72);
         for (let i = 0; i < length; i++) {
-          out[i] += carBand[i] * shapedEnv[i] * speechGate[i] * bandWeight;
+          const carrierSample = synthBand[i] * (1 - bandFill) + localCarrier[i] * bandFill;
+          output[i] += carrierSample * shapedEnv[i] * speechGate[i] * bandGain;
         }
       }
 
-      if (consonants || sibilance) {
-        const consonantTone = buildConsonantCarrier(length, sampleRate, recipe);
-        const consonantBand = highpass(consonantTone, sampleRate, Math.min(3200, high * .48));
-        const originalConsonants = highpass(prepared.original, sampleRate, Math.min(2600, high * .42));
+      if (consonants || unvoiced) {
+        const consonantGuide = highpass(prepared.original, sampleRate, Math.min(2500, high * .38));
+        const airCarrier = buildAirCarrier(length, sampleRate, recipe);
+        const airBand = highpass(airCarrier, sampleRate, Math.min(3400, high * .48));
 
         for (let i = 0; i < length; i++) {
-          const mask = consonantMask[i];
-          out[i] += consonantBand[i] * mask * sibilance * .42;
-          out[i] += originalConsonants[i] * mask * consonants * .58;
+          const mask = unvoicedMask[i];
+          output[i] += consonantGuide[i] * mask * consonants;
+          output[i] += airBand[i] * mask * unvoiced;
         }
       }
 
-      const lowBody = lowpass(out, sampleRate, 2400);
-      const highEdge = highpass(out, sampleRate, 1800);
+      const enhanced = enhanceTrueVocoder(output, sampleRate, brightness);
       const guideVoice = prepared.guide;
       const result = new Float32Array(length);
 
       for (let i = 0; i < length; i++) {
-        const enhanced = out[i] * (1 - clarity * .22) + highEdge[i] * clarity * .34 + lowBody[i] * .08;
-        const mixed = enhanced * wet + guideVoice[i] * guide;
-        result[i] = softClip(mixed * postDrive);
+        result[i] = softClip((enhanced[i] + guideVoice[i] * guide) * outputDrive);
       }
 
-      const shaped = vocoderPostShape(result, sampleRate, recipe);
-      const normalized = normalize(shaped, ceiling);
+      const normalized = normalize(result, ceiling);
       return brickwallLimiter(normalized, ceiling);
     }
 
-    function prepareClassicVocoderInput(input, sampleRate, high) {
-      const original = normalize(input, .92);
-      let modulator = highpass(original, sampleRate, 75);
-      modulator = lowpass(modulator, sampleRate, Math.min(high + 900, sampleRate / 2 - 120));
-      modulator = preEmphasis(modulator, .62);
-      modulator = softClipBuffer(modulator, 1.28);
+    function prepareTrueVocoderInput(input, sampleRate, high) {
+      const original = normalize(input, .9);
+      let modulator = highpass(original, sampleRate, 65);
+      modulator = lowpass(modulator, sampleRate, Math.min(high + 800, sampleRate / 2 - 160));
+      modulator = gentlePreEmphasis(modulator, .38);
+      modulator = softClipBuffer(modulator, 1.08);
 
-      let guide = highpass(original, sampleRate, 120);
-      guide = lowpass(guide, sampleRate, 3100);
-      guide = formantShape(guide, sampleRate, .22);
-      guide = softClipBuffer(guide, 1.55);
+      let guide = highpass(original, sampleRate, 140);
+      guide = lowpass(guide, sampleRate, 2800);
+      guide = softClipBuffer(guide, 1.18);
 
       return { original, modulator, guide };
     }
 
-    function buildClassicVocoderCarrier(length, sampleRate, recipe) {
+    function buildDenseVocoderCarrier(length, sampleRate, recipe) {
       const output = new Float32Array(length);
-      const baseFreq = clamp(Number(recipe.baseFreq) || 100, 38, 260);
-      const type = recipe.carrier || "classic-saw";
-      const drive = clamp(Number(recipe.carrierDrive) || 1.5, .7, 2.6);
-      const vibrato = type === "robot-chord" ? .004 : .0015;
+      const base = clamp(Number(recipe.baseFreq) || 105, 38, 260);
+      const type = recipe.carrier || "pulse-train";
+      const drive = clamp(Number(recipe.carrierDrive) || 1, .7, 1.45);
       let p1 = .03;
-      let p2 = .19;
-      let p3 = .41;
-      let p4 = .67;
-      let p5 = .83;
-
-      for (let i = 0; i < length; i++) {
-        const t = i / sampleRate;
-        const wobble = 1 + Math.sin(2 * Math.PI * 4.8 * t) * vibrato;
-        const f = baseFreq * wobble;
-        p1 = advancePhase(p1, f, sampleRate);
-        p2 = advancePhase(p2, f * 2.000, sampleRate);
-        p3 = advancePhase(p3, f * 3.000, sampleRate);
-        p4 = advancePhase(p4, f * 1.500, sampleRate);
-        p5 = advancePhase(p5, f * .500, sampleRate);
-
-        let x;
-        if (type === "hard-pulse") {
-          x = pulseOsc(p1, .26) * .5 + squareOsc(p2) * .24 + sawOsc(p3) * .18 + pulseOsc(p4, .38) * .08;
-        } else if (type === "mono-square") {
-          x = squareOsc(p1) * .58 + squareOsc(p2) * .26 + sawOsc(p3) * .12 + triangleOsc(p4) * .04;
-        } else if (type === "funk-pulse") {
-          x = pulseOsc(p1, .34) * .38 + sawOsc(p2) * .3 + pulseOsc(p3, .22) * .2 + squareOsc(p4) * .12;
-        } else if (type === "deep-saw") {
-          x = sawOsc(p5) * .28 + sawOsc(p1) * .46 + squareOsc(p2) * .18 + triangleOsc(p4) * .08;
-        } else if (type === "clean-saw-pulse") {
-          x = sawOsc(p1) * .42 + pulseOsc(p2, .3) * .22 + sawOsc(p3) * .22 + squareOsc(p4) * .14;
-        } else if (type === "dual-osc") {
-          x = sawOsc(p1) * .46 + squareOsc(p4) * .3 + sawOsc(p2) * .16 + pulseOsc(p3, .28) * .08;
-        } else if (type === "robot-chord") {
-          x = sawOsc(p1) * .32 + sawOsc(p4) * .24 + squareOsc(p2) * .18 + triangleOsc(p3) * .16 + pulseOsc(p5, .35) * .1;
-        } else {
-          x = sawOsc(p1) * .48 + squareOsc(p2) * .24 + sawOsc(p3) * .18 + pulseOsc(p4, .3) * .1;
-        }
-
-        output[i] = softClip(x * drive) * .82;
-      }
-
-      let shaped = highpass(output, sampleRate, 55);
-      shaped = lowpass(shaped, sampleRate, Math.min(11000, sampleRate / 2 - 140));
-      return shaped;
-    }
-
-    function buildConsonantCarrier(length, sampleRate, recipe) {
-      const output = new Float32Array(length);
-      const baseFreq = clamp(Number(recipe.baseFreq) || 100, 38, 260);
-      let p = .11;
+      let p2 = .21;
+      let p3 = .37;
+      let p4 = .59;
+      let p5 = .73;
       let noise = 0;
 
       for (let i = 0; i < length; i++) {
-        p = advancePhase(p, baseFreq * 6.02, sampleRate);
-        noise = noise * .36 + (Math.random() * 2 - 1) * .64;
-        output[i] = softClip((pulseOsc(p, .18) * .45 + noise * .55) * 1.2);
+        const t = i / sampleRate;
+        const vibrato = 1 + Math.sin(2 * Math.PI * 5.1 * t) * .0018;
+        const f = base * vibrato;
+        p1 = advancePhase(p1, f, sampleRate);
+        p2 = advancePhase(p2, f * 1.997, sampleRate);
+        p3 = advancePhase(p3, f * 3.01, sampleRate);
+        p4 = advancePhase(p4, f * 1.505, sampleRate);
+        p5 = advancePhase(p5, f * .505, sampleRate);
+        noise = noise * .88 + (Math.random() * 2 - 1) * .12;
+
+        let x;
+        if (type === "hard-sync-pulse") {
+          x = pulseOsc(p1, .09) * .42 + squareOsc(p2) * .18 + sawOsc(p3) * .18 + pulseOsc(p4, .19) * .16 + noise * .06;
+        } else if (type === "square-bank") {
+          x = squareOsc(p1) * .38 + squareOsc(p2) * .24 + pulseOsc(p3, .18) * .16 + sawOsc(p4) * .14 + noise * .08;
+        } else if (type === "funk-pulse") {
+          x = pulseOsc(p1, .18) * .34 + pulseOsc(p2, .29) * .22 + sawOsc(p3) * .2 + squareOsc(p4) * .16 + noise * .08;
+        } else if (type === "deep-pulse") {
+          x = pulseOsc(p5, .12) * .28 + pulseOsc(p1, .11) * .34 + sawOsc(p2) * .2 + squareOsc(p3) * .12 + noise * .06;
+        } else if (type === "clean-saw-bank") {
+          x = sawOsc(p1) * .36 + sawOsc(p2) * .23 + pulseOsc(p3, .14) * .18 + squareOsc(p4) * .14 + noise * .09;
+        } else if (type === "dual-osc") {
+          x = sawOsc(p1) * .34 + squareOsc(p4) * .28 + pulseOsc(p2, .16) * .18 + triangleOsc(p3) * .12 + noise * .08;
+        } else if (type === "robot-chord") {
+          x = sawOsc(p1) * .28 + sawOsc(p4) * .22 + squareOsc(p2) * .18 + triangleOsc(p3) * .16 + pulseOsc(p5, .22) * .1 + noise * .06;
+        } else {
+          x = pulseOsc(p1, .1) * .38 + sawOsc(p2) * .24 + squareOsc(p3) * .18 + pulseOsc(p4, .2) * .12 + noise * .08;
+        }
+
+        output[i] = softClip(x * drive);
+      }
+
+      let shaped = highpass(output, sampleRate, 50);
+      shaped = lowpass(shaped, sampleRate, Math.min(12000, sampleRate / 2 - 160));
+      return shaped;
+    }
+
+    function buildLocalBandCarrier(length, sampleRate, center, pos, recipe) {
+      const output = new Float32Array(length);
+      const type = recipe.carrier || "pulse-train";
+      let phase = (pos * .731 + .17) % 1;
+      const ratio = type === "deep-pulse" ? .5 : 1;
+      const freq = clamp(center * ratio, 45, sampleRate / 2 - 220);
+
+      for (let i = 0; i < length; i++) {
+        phase = advancePhase(phase, freq, sampleRate);
+        let x;
+        if (type === "square-bank" || type === "hard-sync-pulse") {
+          x = squareOsc(phase) * .62 + pulseOsc((phase * 2) % 1, .23) * .22 + Math.sin(2 * Math.PI * phase) * .16;
+        } else if (type === "clean-saw-bank" || type === "funk-pulse") {
+          x = sawOsc(phase) * .48 + pulseOsc((phase * 1.5) % 1, .28) * .28 + Math.sin(2 * Math.PI * phase) * .24;
+        } else {
+          x = Math.sin(2 * Math.PI * phase) * .48 + sawOsc(phase) * .32 + pulseOsc((phase * 2) % 1, .2) * .2;
+        }
+        output[i] = x * .72;
       }
 
       return output;
     }
 
-    function advancePhase(phase, freq, sampleRate) {
-      phase += freq / sampleRate;
-      return phase - Math.floor(phase);
+    function trueVocoderBandpass(input, sampleRate, center, q) {
+      return channelBiquadBandpass(input, sampleRate, center, q);
     }
 
-    function sawOsc(phase) {
-      return phase * 2 - 1;
-    }
-
-    function squareOsc(phase) {
-      return phase < .5 ? 1 : -1;
-    }
-
-    function pulseOsc(phase, width) {
-      return phase < clamp(width, .08, .92) ? 1 : -1;
-    }
-
-    function triangleOsc(phase) {
-      return 1 - 4 * Math.abs(Math.round(phase - .25) - (phase - .25));
-    }
-
-    function classicVocoderBandpass(input, sampleRate, center, q) {
-      let output = biquadBandpass(input, sampleRate, center, q);
-      output = biquadBandpass(output, sampleRate, center, q * .94);
-      return output;
-    }
-
-    function biquadBandpass(input, sampleRate, center, q) {
+    function channelBiquadBandpass(input, sampleRate, center, q) {
       const output = new Float32Array(input.length);
-      const safeCenter = clamp(center, 24, sampleRate / 2 - 160);
+      const safeCenter = clamp(center, 24, sampleRate / 2 - 180);
       const w0 = 2 * Math.PI * safeCenter / sampleRate;
       const alpha = Math.sin(w0) / (2 * Math.max(.1, q));
       const cos = Math.cos(w0);
@@ -3461,48 +3447,47 @@
       return output;
     }
 
-    function classicRmsEnvelope(input, sampleRate, attackMs, releaseMs) {
+    function trueEnvelope(input, sampleRate, attackMs, releaseMs) {
       const output = new Float32Array(input.length);
       const attack = Math.exp(-1 / (sampleRate * Math.max(.25, attackMs) / 1000));
       const release = Math.exp(-1 / (sampleRate * Math.max(1, releaseMs) / 1000));
       let env = 0;
 
       for (let i = 0; i < input.length; i++) {
-        const value = input[i] * input[i];
+        const value = Math.abs(input[i]);
         const coeff = value > env ? attack : release;
         env = coeff * env + (1 - coeff) * value;
-        output[i] = Math.sqrt(env);
+        output[i] = env;
       }
 
       return output;
     }
 
-    function shapeBandEnvelope(env, boost, curve, floor) {
+    function trueEnvelopeShape(env, depth, floor) {
       const output = new Float32Array(env.length);
       let peak = 0;
       let sum = 0;
 
       for (let i = 0; i < env.length; i++) {
-        const v = env[i];
-        if (v > peak) peak = v;
-        sum += v;
+        peak = Math.max(peak, env[i]);
+        sum += env[i];
       }
 
       const avg = sum / Math.max(1, env.length);
-      const ref = Math.max(avg * 5.5, peak * .42, .0008);
-      const b = Number(boost) || 4;
-      const c = Number(curve) || .42;
-      const f = clamp(floor || 0, 0, .12);
+      const ref = Math.max(peak * .58, avg * 4.2, .0006);
+      const d = clamp(depth, .45, 1.7);
+      const f = clamp(floor, 0, .08);
 
       for (let i = 0; i < env.length; i++) {
-        const v = clamp((env[i] * b) / ref, 0, 1.35);
-        output[i] = f + Math.pow(v, c) * (1 - f);
+        const normalized = clamp(env[i] / ref, 0, 1.25);
+        const opened = Math.pow(normalized, .72 / d);
+        output[i] = f + opened * (1 - f);
       }
 
       return output;
     }
 
-    function makeClassicSpeechGate(envelope, amount) {
+    function makeTrueSpeechGate(envelope, amount) {
       const output = new Float32Array(envelope.length);
       let peak = 0;
       let sum = 0;
@@ -3513,52 +3498,67 @@
       }
 
       const avg = sum / Math.max(1, envelope.length);
-      const threshold = Math.max(avg * .45, peak * .015, .0004);
-      const amt = clamp(amount, 0, 1);
+      const threshold = Math.max(avg * .32, peak * .012, .00025);
+      const amt = clamp(amount, 0, .9);
 
       for (let i = 0; i < envelope.length; i++) {
-        const open = Math.pow(clamp((envelope[i] - threshold) / Math.max(threshold * 5, .0004), 0, 1), .36);
+        const open = Math.pow(clamp((envelope[i] - threshold) / Math.max(threshold * 7, .0003), 0, 1), .42);
         output[i] = (1 - amt) + open * amt;
       }
 
       return output;
     }
 
-    function makeUnvoicedMask(input, sampleRate) {
-      const high = highpass(input, sampleRate, 3200);
-      const low = lowpass(input, sampleRate, 1450);
-      const highEnv = classicRmsEnvelope(high, sampleRate, .7, 34);
-      const lowEnv = classicRmsEnvelope(low, sampleRate, 4, 110);
+    function makeTrueUnvoicedMask(input, sampleRate) {
+      const high = highpass(input, sampleRate, 3000);
+      const low = lowpass(input, sampleRate, 1300);
+      const highEnv = trueEnvelope(high, sampleRate, .7, 24);
+      const lowEnv = trueEnvelope(low, sampleRate, 4, 95);
       const mask = new Float32Array(input.length);
 
       for (let i = 0; i < input.length; i++) {
-        const ratio = highEnv[i] / (lowEnv[i] + .012);
-        const energy = clamp(highEnv[i] * 7.5, 0, 1);
-        mask[i] = clamp((ratio - .18) * 1.45, 0, 1) * energy;
+        const ratio = highEnv[i] / (lowEnv[i] + .018);
+        const energy = clamp(highEnv[i] * 8, 0, 1);
+        mask[i] = clamp((ratio - .16) * 1.8, 0, 1) * energy;
       }
 
       return mask;
     }
 
-    function vocoderPostShape(input, sampleRate, recipe) {
-      let output = highpass(input, sampleRate, 70);
-      const bright = highpass(output, sampleRate, 1800);
-      const body = bandpass(output, sampleRate, 180, 1100);
-      const air = highpass(output, sampleRate, 4200);
-      const clarity = clamp(Number(recipe.clarity) || .28, 0, .65);
+    function buildAirCarrier(length, sampleRate, recipe) {
+      const output = new Float32Array(length);
+      const base = clamp(Number(recipe.baseFreq) || 105, 38, 260);
+      let phase = .13;
+      let noise = 0;
+
+      for (let i = 0; i < length; i++) {
+        phase = advancePhase(phase, base * 8.03, sampleRate);
+        noise = noise * .25 + (Math.random() * 2 - 1) * .75;
+        output[i] = pulseOsc(phase, .12) * .28 + noise * .72;
+      }
+
+      return output;
+    }
+
+    function enhanceTrueVocoder(input, sampleRate, brightness) {
+      let output = highpass(input, sampleRate, 55);
+      const body = bandpass(output, sampleRate, 160, 1200);
+      const edge = highpass(output, sampleRate, 1800);
+      const air = highpass(output, sampleRate, 5200);
+      const b = clamp(brightness, 0, .7);
       const result = new Float32Array(output.length);
 
       for (let i = 0; i < output.length; i++) {
-        result[i] = output[i] + bright[i] * clarity * .34 + body[i] * .06 - air[i] * .04;
+        result[i] = output[i] + body[i] * .1 + edge[i] * b * .24 - air[i] * .03;
       }
 
-      return softClipBuffer(result, 1.05);
+      return result;
     }
 
-    function preEmphasis(input, amount) {
+    function gentlePreEmphasis(input, amount) {
       const output = new Float32Array(input.length);
       let previous = 0;
-      const a = clamp(Number(amount) || .62, 0, .98);
+      const a = clamp(Number(amount) || .38, 0, .92);
 
       for (let i = 0; i < input.length; i++) {
         const x = input[i];
@@ -3578,6 +3578,27 @@
       }
 
       return output;
+    }
+
+    function advancePhase(phase, freq, sampleRate) {
+      phase += freq / sampleRate;
+      return phase - Math.floor(phase);
+    }
+
+    function sawOsc(phase) {
+      return phase * 2 - 1;
+    }
+
+    function squareOsc(phase) {
+      return phase < .5 ? 1 : -1;
+    }
+
+    function pulseOsc(phase, width) {
+      return phase < clamp(width, .02, .95) ? 1 : -1;
+    }
+
+    function triangleOsc(phase) {
+      return 1 - 4 * Math.abs(Math.round(phase - .25) - (phase - .25));
     }
 
     function makeLogBandEdges(low, high, bands) {
