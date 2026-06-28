@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix</title>
+  <title>Robo Phonix v19</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -1053,7 +1053,9 @@
       line-height: 1.35;
     }
 
-    .vocoder-control {
+    .vocoder-control,
+    .vocoder-tweak-lab,
+    .custom-vocoder-preset-lab {
       display: none;
       gap: 8px;
     }
@@ -1063,12 +1065,74 @@
         linear-gradient(135deg, rgba(193,255,26,.26) 0%, rgba(255,255,255,.56) 48%, rgba(255,0,174,.22) 100%);
     }
 
+    .vocoder-tweak-lab,
+    .custom-vocoder-preset-lab {
+      padding: 14px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(193,255,26,.2), rgba(255,255,255,.46), rgba(255,0,174,.18));
+      border: 1px solid rgba(10,10,10,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+    }
+
+    .vocoder-tweak-head,
+    .custom-vocoder-preset-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #0a0a0a;
+    }
+
+    .vocoder-tweak-head span,
+    .custom-vocoder-preset-head span {
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .vocoder-tweak-head small,
+    .custom-vocoder-preset-head small {
+      color: rgba(0,0,0,.62);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .vocoder-tweak-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .vocoder-tweak-grid label:first-child {
+      grid-column: 1 / -1;
+    }
+
+    .vocoder-slider-row {
+      display: grid;
+      grid-template-columns: 1fr 68px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .vocoder-readout {
+      color: rgba(0,0,0,.66);
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
     body.engine-vocoder .voice-control,
     body.engine-vocoder .preset-lab {
       display: none;
     }
 
-    body.engine-vocoder .vocoder-control {
+    body.engine-vocoder .vocoder-control,
+    body.engine-vocoder .vocoder-tweak-lab,
+    body.engine-vocoder .custom-vocoder-preset-lab {
       display: grid;
     }
 
@@ -1086,6 +1150,11 @@
     .voice-card.is-vocoder .voice-card-code {
       background: linear-gradient(180deg, #ff66ca 0%, #ff00ae 100%);
       color: #ffffff;
+    }
+
+    .voice-card.is-vocoder.is-custom .voice-card-code {
+      background: linear-gradient(180deg, #d6ff68 0%, #c1ff1a 100%);
+      color: #050505;
     }
 
 
@@ -1278,7 +1347,7 @@
 
       <div class="hero-topline">
         <span class="hero-mark">↗</span>
-        <span class="hero-mini">Voice Lab | American Robot Voice Suite</span>
+        <span class="hero-mini">Voice Lab | v19 Custom Vocoder Presets</span>
       </div>
 
       <div class="badge">◉ Futuristic Voice Lab</div>
@@ -1286,7 +1355,7 @@
       <h1><span>Robo</span> Phonix</h1>
 
       <p>
-        Text to robot voice generation with a futuristic lab interface, voice rack browsing and MP3 export.
+        Text to robot voice generation, audio robotizer and custom vocoder preset design in a futuristic lab interface.
       </p>
 
       <div class="hero-rails">
@@ -1391,6 +1460,75 @@
               </span>
               <em>Browse</em>
             </button>
+          </div>
+
+          <div class="vocoder-tweak-lab">
+            <div class="vocoder-tweak-head">
+              <span>Vocoder Control Strip</span>
+              <small>Live tweak</small>
+            </div>
+
+            <div class="vocoder-tweak-grid">
+              <label>
+                Carrier
+                <select id="vocoderCarrier">
+                  <option value="rap-pulse">Rap pulse</option>
+                  <option value="hard-square-pulse">Hard square pulse</option>
+                  <option value="square">Square</option>
+                  <option value="funk-pulse">Funk pulse</option>
+                  <option value="deep-buzz">Deep buzz</option>
+                  <option value="clean-saw">Clean saw</option>
+                  <option value="robot-chord">Robot chord</option>
+                </select>
+                <span class="vocoder-readout">Changes are applied to upload and microphone vocoder processing.</span>
+              </label>
+
+              <label>
+                Brightness
+                <div class="vocoder-slider-row">
+                  <input id="vocoderBrightness" type="range" min="-25" max="75" step="1" value="30">
+                  <input id="vocoderBrightnessNum" type="number" min="-25" max="75" step="1" value="30">
+                </div>
+              </label>
+
+              <label>
+                Guide
+                <div class="vocoder-slider-row">
+                  <input id="vocoderGuide" type="range" min="0" max="8" step="0.5" value="3.5">
+                  <input id="vocoderGuideNum" type="number" min="0" max="8" step="0.5" value="3.5">
+                </div>
+              </label>
+
+              <label>
+                Consonants
+                <div class="vocoder-slider-row">
+                  <input id="vocoderConsonants" type="range" min="0" max="22" step="0.5" value="9">
+                  <input id="vocoderConsonantsNum" type="number" min="0" max="22" step="0.5" value="9">
+                </div>
+              </label>
+
+              <label>
+                Body
+                <div class="vocoder-slider-row">
+                  <input id="vocoderBody" type="range" min="0" max="35" step="1" value="16">
+                  <input id="vocoderBodyNum" type="number" min="0" max="35" step="1" value="16">
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="custom-vocoder-preset-lab">
+            <div class="custom-vocoder-preset-head">
+              <span>Custom Vocoder Presets</span>
+              <small id="customVocoderPresetCount">0 saved</small>
+            </div>
+
+            <div class="preset-actions">
+              <button id="saveCustomVocoderPresetBtn" class="secondary micro-button" type="button">Save current</button>
+              <button id="exportCustomVocoderPresetsBtn" class="secondary micro-button" type="button">Export JSON</button>
+              <button id="importCustomVocoderPresetsBtn" class="secondary micro-button" type="button">Import JSON</button>
+              <input id="importCustomVocoderPresetsFile" type="file" accept="application/json,.json" hidden>
+            </div>
           </div>
 
           <div class="grid">
@@ -2233,6 +2371,16 @@
       }
     ];
 
+    const vocoderCarrierOptions = [
+      "rap-pulse",
+      "hard-square-pulse",
+      "square",
+      "funk-pulse",
+      "deep-buzz",
+      "clean-saw",
+      "robot-chord"
+    ];
+
     const el = {
       textInput: document.querySelector("#textInput"),
       openVoiceDrawer: document.querySelector("#openVoiceDrawer"),
@@ -2248,6 +2396,20 @@
       vocoderList: document.querySelector("#vocoderList"),
       selectedVocoderName: document.querySelector("#selectedVocoderName"),
       selectedVocoderMeta: document.querySelector("#selectedVocoderMeta"),
+      vocoderCarrier: document.querySelector("#vocoderCarrier"),
+      vocoderBrightness: document.querySelector("#vocoderBrightness"),
+      vocoderBrightnessNum: document.querySelector("#vocoderBrightnessNum"),
+      vocoderGuide: document.querySelector("#vocoderGuide"),
+      vocoderGuideNum: document.querySelector("#vocoderGuideNum"),
+      vocoderConsonants: document.querySelector("#vocoderConsonants"),
+      vocoderConsonantsNum: document.querySelector("#vocoderConsonantsNum"),
+      vocoderBody: document.querySelector("#vocoderBody"),
+      vocoderBodyNum: document.querySelector("#vocoderBodyNum"),
+      saveCustomVocoderPresetBtn: document.querySelector("#saveCustomVocoderPresetBtn"),
+      exportCustomVocoderPresetsBtn: document.querySelector("#exportCustomVocoderPresetsBtn"),
+      importCustomVocoderPresetsBtn: document.querySelector("#importCustomVocoderPresetsBtn"),
+      importCustomVocoderPresetsFile: document.querySelector("#importCustomVocoderPresetsFile"),
+      customVocoderPresetCount: document.querySelector("#customVocoderPresetCount"),
       robotModeBtn: document.querySelector("#robotModeBtn"),
       vocoderModeBtn: document.querySelector("#vocoderModeBtn"),
       engineModeBadge: document.querySelector("#engineModeBadge"),
@@ -2295,9 +2457,10 @@
 
     let currentUrls = [];
     let selectedPresetId = "en-calm-space-ai";
-    let selectedVocoderId = "vocoder-classic-rap-talkbot";
+    let selectedVocoderId = "vocoder-spectral-talkbot";
     let engineMode = "robot";
     let customVoiceRecipes = [];
+    let customVocoderRecipes = [];
     let uploadedAudioFile = null;
     let recordedAudioFile = null;
     let mediaRecorder = null;
@@ -2317,13 +2480,16 @@
 
     function init() {
       customVoiceRecipes = loadCustomVoiceRecipes();
+      customVocoderRecipes = loadCustomVocoderRecipes();
       selectedPresetId = "en-calm-space-ai";
-      selectedVocoderId = "vocoder-classic-rap-talkbot";
+      selectedVocoderId = "vocoder-spectral-talkbot";
       document.body.classList.add("engine-robot");
       renderVoiceList();
       renderVocoderList();
       updateCustomPresetCount();
+      updateCustomVocoderPresetCount();
       applyPresetToControls(getPreset());
+      applyVocoderPresetToControls(getStoredVocoderPreset());
       updateSelectedVoice();
       updateSelectedVocoder();
       setEngineMode("robot");
@@ -2332,6 +2498,11 @@
       bindPair(el.pitch, el.pitchNum);
       bindPair(el.amp, el.ampNum);
       bindPair(el.kbps, el.kbpsNum);
+      bindPair(el.vocoderBrightness, el.vocoderBrightnessNum);
+      bindPair(el.vocoderGuide, el.vocoderGuideNum);
+      bindPair(el.vocoderConsonants, el.vocoderConsonantsNum);
+      bindPair(el.vocoderBody, el.vocoderBodyNum);
+      bindVocoderControlEvents();
 
       el.openVoiceDrawer.addEventListener("click", openVoiceDrawer);
       el.closeVoiceDrawer.addEventListener("click", closeVoiceDrawer);
@@ -2350,6 +2521,11 @@
       el.exportCustomPresetsBtn.addEventListener("click", exportCustomPresets);
       el.importCustomPresetsBtn.addEventListener("click", () => el.importCustomPresetsFile.click());
       el.importCustomPresetsFile.addEventListener("change", importCustomPresetsFromFile);
+
+      el.saveCustomVocoderPresetBtn.addEventListener("click", saveCurrentAsCustomVocoderPreset);
+      el.exportCustomVocoderPresetsBtn.addEventListener("click", exportCustomVocoderPresets);
+      el.importCustomVocoderPresetsBtn.addEventListener("click", () => el.importCustomVocoderPresetsFile.click());
+      el.importCustomVocoderPresetsFile.addEventListener("change", importCustomVocoderPresetsFromFile);
 
       el.audioUploadInput.addEventListener("change", handleAudioUploadChange);
       el.processAudioBtn.addEventListener("click", processUploadedAudio);
@@ -2382,6 +2558,29 @@
     function bindPair(range, number) {
       range.addEventListener("input", () => number.value = range.value);
       number.addEventListener("input", () => range.value = number.value);
+    }
+
+    function bindVocoderControlEvents() {
+      [
+        el.vocoderCarrier,
+        el.vocoderBrightness,
+        el.vocoderBrightnessNum,
+        el.vocoderGuide,
+        el.vocoderGuideNum,
+        el.vocoderConsonants,
+        el.vocoderConsonantsNum,
+        el.vocoderBody,
+        el.vocoderBodyNum
+      ].forEach((control) => {
+        control.addEventListener("input", handleVocoderControlChange);
+        control.addEventListener("change", handleVocoderControlChange);
+      });
+    }
+
+    function handleVocoderControlChange() {
+      normalizeVocoderControlInputs();
+      updateSelectedVocoder();
+      renderVocoderList();
     }
 
     function getAllVoiceRecipes() {
@@ -2459,19 +2658,71 @@
       });
     }
 
+    function getAllVocoderRecipes() {
+      return [...vocoderRecipes, ...customVocoderRecipes];
+    }
+
+    function getStoredVocoderPreset() {
+      return getAllVocoderRecipes().find((preset) => preset.id === selectedVocoderId) || vocoderRecipes[0];
+    }
+
     function getVocoderPreset() {
-      return vocoderRecipes.find((preset) => preset.id === selectedVocoderId) || vocoderRecipes[0];
+      return { ...getStoredVocoderPreset(), ...readVocoderControlOverrides() };
+    }
+
+    function applyVocoderPresetToControls(preset) {
+      const safe = preset || vocoderRecipes[0];
+      el.vocoderCarrier.value = sanitizeVocoderCarrier(safe.carrier || "rap-pulse");
+      setVocoderPercentPair(el.vocoderBrightness, el.vocoderBrightnessNum, safe.brightness, 30, -25, 75);
+      setVocoderPercentPair(el.vocoderGuide, el.vocoderGuideNum, safe.guide, 3.5, 0, 8);
+      setVocoderPercentPair(el.vocoderConsonants, el.vocoderConsonantsNum, safe.consonants, 9, 0, 22);
+      setVocoderPercentPair(el.vocoderBody, el.vocoderBodyNum, safe.body, 16, 0, 35);
+    }
+
+    function setVocoderPercentPair(range, number, value, fallback, min, max) {
+      const raw = Number.isFinite(Number(value)) ? Number(value) * 100 : fallback;
+      const clipped = clamp(raw, min, max);
+      const rounded = Math.round(clipped * 10) / 10;
+      range.value = rounded;
+      number.value = rounded;
+    }
+
+    function normalizeVocoderControlInputs() {
+      const brightness = clamp(numberOrDefault(el.vocoderBrightness.value, 30), -25, 75);
+      const guide = clamp(numberOrDefault(el.vocoderGuide.value, 3.5), 0, 8);
+      const consonants = clamp(numberOrDefault(el.vocoderConsonants.value, 9), 0, 22);
+      const body = clamp(numberOrDefault(el.vocoderBody.value, 16), 0, 35);
+
+      el.vocoderBrightness.value = brightness;
+      el.vocoderBrightnessNum.value = brightness;
+      el.vocoderGuide.value = guide;
+      el.vocoderGuideNum.value = guide;
+      el.vocoderConsonants.value = consonants;
+      el.vocoderConsonantsNum.value = consonants;
+      el.vocoderBody.value = body;
+      el.vocoderBodyNum.value = body;
+      el.vocoderCarrier.value = sanitizeVocoderCarrier(el.vocoderCarrier.value);
+    }
+
+    function readVocoderControlOverrides() {
+      return {
+        carrier: sanitizeVocoderCarrier(el.vocoderCarrier.value),
+        brightness: clamp(numberOrDefault(el.vocoderBrightness.value, 30) / 100, -.25, .75),
+        guide: clamp(numberOrDefault(el.vocoderGuide.value, 3.5) / 100, 0, .08),
+        consonants: clamp(numberOrDefault(el.vocoderConsonants.value, 9) / 100, 0, .22),
+        body: clamp(numberOrDefault(el.vocoderBody.value, 16) / 100, 0, .35)
+      };
     }
 
     function updateSelectedVocoder() {
       const preset = getVocoderPreset();
-      el.selectedVocoderName.textContent = preset.label;
-      el.selectedVocoderMeta.textContent = preset.desc || preset.carrier;
+      el.selectedVocoderName.textContent = cleanVocoderName(preset.label);
+      el.selectedVocoderMeta.textContent = `${preset.desc || preset.carrier} · ${formatVocoderCarrierName(preset.carrier)}`;
     }
 
     function renderVocoderList() {
       const query = (el.vocoderSearch.value || "").trim().toLowerCase();
-      const matches = vocoderRecipes.filter((preset) => {
+      const matches = getAllVocoderRecipes().filter((preset) => {
         const haystack = `${preset.label} ${preset.desc || ""} ${preset.carrier || ""} ${(preset.tags || []).join(" ")}`.toLowerCase();
         return haystack.includes(query);
       });
@@ -2489,20 +2740,29 @@
       matches.forEach((preset) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = `voice-card is-vocoder${preset.id === selectedVocoderId ? " is-selected" : ""}`;
+        button.className = `voice-card is-vocoder${preset.id === selectedVocoderId ? " is-selected" : ""}${preset.custom ? " is-custom" : ""}`;
         button.innerHTML = `
           <span>
-            <span class="voice-card-title">${escapeHtml(preset.label)}</span>
+            <span class="voice-card-title">${escapeHtml(cleanVocoderName(preset.label))}</span>
             <span class="voice-card-desc">${escapeHtml(preset.desc || "")}</span>
-            <span class="voice-card-code">${escapeHtml(`${preset.bands} bands · ${preset.carrier}`)}</span>
+            <span class="voice-card-code">${escapeHtml(preset.custom ? `custom · ${preset.carrier}` : preset.carrier)}</span>
           </span>
           <span class="voice-card-actions">
             <span class="voice-card-check">${preset.id === selectedVocoderId ? "✓" : ""}</span>
+            ${preset.custom ? `<span class="voice-card-delete" data-delete-vocoder-id="${escapeHtml(preset.id)}">×</span>` : ""}
           </span>
         `;
 
-        button.addEventListener("click", () => {
+        button.addEventListener("click", (event) => {
+          const deleteId = event.target?.dataset?.deleteVocoderId;
+          if (deleteId) {
+            event.stopPropagation();
+            deleteCustomVocoderPreset(deleteId);
+            return;
+          }
+
           selectedVocoderId = preset.id;
+          applyVocoderPresetToControls(preset);
           updateSelectedVocoder();
           renderVocoderList();
           closeVocoderDrawer();
@@ -2523,7 +2783,7 @@
       el.vocoderModeBtn.setAttribute("aria-pressed", engineMode === "vocoder" ? "true" : "false");
       el.engineModeBadge.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
       el.engineModeMeta.textContent = engineMode === "vocoder"
-        ? "Vocoder FX uses its own Vocoder Rack and is meant for upload and microphone."
+        ? "Vocoder FX uses its own rack, live controls, upload and microphone."
         : "Robot FX uses Voice Rack, text, upload and microphone.";
 
       updateProcessButtonLabels();
@@ -2788,6 +3048,203 @@
       return `custom-${slug}-${Date.now().toString(36)}`;
     }
 
+    function loadCustomVocoderRecipes() {
+      try {
+        const raw = localStorage.getItem("roboPhonixCustomVocoderPresets");
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        const source = Array.isArray(parsed) ? parsed : parsed.presets;
+        if (!Array.isArray(source)) return [];
+        return source.map(sanitizeCustomVocoderPreset).filter(Boolean);
+      } catch {
+        return [];
+      }
+    }
+
+    function persistCustomVocoderRecipes() {
+      localStorage.setItem("roboPhonixCustomVocoderPresets", JSON.stringify(customVocoderRecipes));
+      updateCustomVocoderPresetCount();
+    }
+
+    function updateCustomVocoderPresetCount() {
+      const count = customVocoderRecipes.length;
+      el.customVocoderPresetCount.textContent = `${count} saved`;
+    }
+
+    function saveCurrentAsCustomVocoderPreset() {
+      const base = getStoredVocoderPreset();
+      const live = getVocoderPreset();
+      const name = prompt("Custom vocoder preset name", `Custom ${cleanVocoderName(base.label)}`);
+      if (!name || !name.trim()) return;
+
+      const custom = sanitizeCustomVocoderPreset({
+        ...live,
+        id: makeCustomVocoderPresetId(name),
+        custom: true,
+        desc: "Custom saved vocoder preset",
+        tags: ["custom", "vocoder", ...(Array.isArray(base.tags) ? base.tags : [])],
+        label: `CUSTOM ${name.trim()}`,
+        createdAt: new Date().toISOString()
+      });
+
+      if (!custom) {
+        setStatus("<strong>Save failed.</strong> The current vocoder preset could not be saved.", true);
+        return;
+      }
+
+      customVocoderRecipes.push(custom);
+      persistCustomVocoderRecipes();
+      selectedVocoderId = custom.id;
+      applyVocoderPresetToControls(custom);
+      updateSelectedVocoder();
+      renderVocoderList();
+      setStatus("<strong>Saved.</strong> Custom vocoder preset stored in this browser.");
+    }
+
+    function deleteCustomVocoderPreset(id) {
+      const preset = customVocoderRecipes.find((item) => item.id === id);
+      if (!preset) return;
+      if (!confirm(`Delete custom vocoder preset "${cleanVocoderName(preset.label)}"?`)) return;
+
+      customVocoderRecipes = customVocoderRecipes.filter((item) => item.id !== id);
+      if (selectedVocoderId === id) {
+        selectedVocoderId = vocoderRecipes[0].id;
+        applyVocoderPresetToControls(vocoderRecipes[0]);
+        updateSelectedVocoder();
+      }
+      persistCustomVocoderRecipes();
+      renderVocoderList();
+      setStatus("<strong>Deleted.</strong> Custom vocoder preset removed.");
+    }
+
+    function exportCustomVocoderPresets() {
+      const payload = {
+        app: "Robo Phonix",
+        type: "custom-vocoder-presets",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        presets: customVocoderRecipes
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      currentUrls.push(url);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `robo-phonix-vocoder-presets-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setStatus("<strong>Exported.</strong> Custom vocoder presets saved as JSON.");
+    }
+
+    async function importCustomVocoderPresetsFromFile(event) {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!parsed || parsed.type !== "custom-vocoder-presets") {
+          throw new Error("This is not a custom vocoder preset JSON file.");
+        }
+
+        const source = parsed.presets;
+        if (!Array.isArray(source)) throw new Error("No vocoder presets array found.");
+
+        const imported = source.map(sanitizeCustomVocoderPreset).filter(Boolean);
+        if (!imported.length) throw new Error("No valid custom vocoder presets found.");
+
+        const existingIds = new Set(customVocoderRecipes.map((item) => item.id));
+        const merged = imported.map((item) => {
+          let id = item.id;
+          while (existingIds.has(id) || vocoderRecipes.some((preset) => preset.id === id)) {
+            id = `${item.id}-${Math.random().toString(36).slice(2, 6)}`;
+          }
+          existingIds.add(id);
+          return { ...item, id, custom: true };
+        });
+
+        customVocoderRecipes = [...customVocoderRecipes, ...merged];
+        persistCustomVocoderRecipes();
+        renderVocoderList();
+        setStatus(`<strong>Imported.</strong> ${merged.length} custom vocoder preset${merged.length === 1 ? "" : "s"} added.`);
+      } catch (error) {
+        setStatus(`<strong>Vocoder import failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+      }
+    }
+
+    function sanitizeCustomVocoderPreset(value) {
+      if (!value || typeof value !== "object") return null;
+      if (!value.label) return null;
+
+      const base = vocoderRecipes[0];
+      const low = clamp(numberOrDefault(value.low, base.low), 40, 500);
+      const high = clamp(numberOrDefault(value.high, base.high), low + 900, 12000);
+      const clean = {
+        id: String(value.id || makeCustomVocoderPresetId(value.label)).replace(/[^a-z0-9_-]/gi, "-").toLowerCase(),
+        custom: true,
+        label: String(value.label).slice(0, 80),
+        desc: String(value.desc || "Custom imported vocoder preset").slice(0, 100),
+        tags: Array.isArray(value.tags) ? [...new Set(value.tags.map(String))].slice(0, 14) : ["custom", "vocoder"],
+        carrier: sanitizeVocoderCarrier(value.carrier || base.carrier),
+        baseFreq: clamp(numberOrDefault(value.baseFreq, base.baseFreq), 36, 220),
+        fftSize: nearestPowerOfTwo(clampInt(numberOrDefault(value.fftSize, base.fftSize), 1024, 4096)),
+        hopFactor: clampInt(numberOrDefault(value.hopFactor, base.hopFactor), 2, 8),
+        low,
+        high,
+        envelopeSmooth: clampInt(numberOrDefault(value.envelopeSmooth, base.envelopeSmooth), 3, 34),
+        formantHold: clamp(numberOrDefault(value.formantHold, base.formantHold), .45, 1.15),
+        carrierTexture: clamp(numberOrDefault(value.carrierTexture, base.carrierTexture), 0, 1.2),
+        carrierFloor: clamp(numberOrDefault(value.carrierFloor, base.carrierFloor), .05, .65),
+        consonants: clamp(numberOrDefault(value.consonants, base.consonants), 0, .22),
+        unvoiced: clamp(numberOrDefault(value.unvoiced, base.unvoiced), 0, .2),
+        guide: clamp(numberOrDefault(value.guide, base.guide), 0, .08),
+        body: clamp(numberOrDefault(value.body, base.body), 0, .35),
+        brightness: clamp(numberOrDefault(value.brightness, base.brightness), -.25, .75),
+        outputDrive: clamp(numberOrDefault(value.outputDrive, base.outputDrive), .65, 1.45),
+        ceiling: clamp(numberOrDefault(value.ceiling, base.ceiling), .72, .99),
+        createdAt: value.createdAt || new Date().toISOString()
+      };
+
+      ["wobble", "dropout", "crush"].forEach((key) => {
+        const number = Number(value[key]);
+        if (Number.isFinite(number)) clean[key] = number;
+      });
+
+      return clean;
+    }
+
+    function sanitizeVocoderCarrier(value) {
+      return vocoderCarrierOptions.includes(value) ? value : "rap-pulse";
+    }
+
+    function cleanVocoderName(label) {
+      return String(label || "Vocoder").replace(/^CUSTOM\s+/i, "");
+    }
+
+    function formatVocoderCarrierName(value) {
+      return sanitizeVocoderCarrier(value).replace(/-/g, " ");
+    }
+
+    function makeCustomVocoderPresetId(name) {
+      const slug = String(name)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 42) || "custom-vocoder";
+      return `custom-vocoder-${slug}-${Date.now().toString(36)}`;
+    }
+
+    function numberOrDefault(value, fallback) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : fallback;
+    }
+
     function setStatus(message, isError = false) {
       el.status.classList.toggle("error", isError);
       el.status.innerHTML = message;
@@ -2828,7 +3285,9 @@
       el.audioUploadMeta.textContent = `${formatBytes(file.size)} · ready for ${engineMode === "vocoder" ? "vocoder FX" : "robot FX"}`;
       el.processAudioBtn.disabled = false;
       el.clearAudioBtn.disabled = false;
-      setStatus("<strong>Audio loaded.</strong> Choose a voice preset and click Robotize audio.");
+      setStatus(engineMode === "vocoder"
+        ? "<strong>Audio loaded.</strong> Choose or tweak a vocoder preset and click Vocode audio."
+        : "<strong>Audio loaded.</strong> Choose a voice preset and click Robotize audio.");
     }
 
     function clearUploadedAudio() {
@@ -3039,7 +3498,9 @@
       el.clearRecordingBtn.disabled = false;
       el.micRecordDisplay.classList.remove("is-recording");
 
-      setStatus("<strong>Recording ready.</strong> Choose a voice preset and click Robotize recording.");
+      setStatus(engineMode === "vocoder"
+        ? "<strong>Recording ready.</strong> Choose or tweak a vocoder preset and click Vocode recording."
+        : "<strong>Recording ready.</strong> Choose a voice preset and click Robotize recording.");
     }
 
     function clearRecordedAudio(showStatus = true) {
