@@ -759,6 +759,85 @@
       }
     }
 
+
+    .preset-lab {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(255,0,174,.16), rgba(255,255,255,.44), rgba(193,255,26,.18));
+      border: 1px solid rgba(10,10,10,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+    }
+
+    .preset-lab-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #0a0a0a;
+    }
+
+    .preset-lab-head span {
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .preset-lab-head small {
+      color: rgba(0,0,0,.62);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .preset-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .micro-button {
+      padding: 9px 12px;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .voice-card.is-custom .voice-card-code {
+      background: linear-gradient(180deg, #d6ff68 0%, #c1ff1a 100%);
+      color: #050505;
+    }
+
+    .voice-card-actions {
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+      align-items: center;
+    }
+
+    .voice-card-delete {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      padding: 0;
+      color: #ffffff;
+      background: linear-gradient(180deg, #ff30bf 0%, #ff00ae 100%);
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: none;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .voice-card-delete:hover {
+      transform: none;
+      filter: brightness(1.06);
+    }
+
     @media (max-width: 860px) {
       .hero-robot-stage {
         opacity: .28;
@@ -895,6 +974,20 @@
               </span>
               <em>Browse</em>
             </button>
+          </div>
+
+          <div class="preset-lab">
+            <div class="preset-lab-head">
+              <span>Custom Presets</span>
+              <small id="customPresetCount">0 saved</small>
+            </div>
+
+            <div class="preset-actions">
+              <button id="saveCustomPresetBtn" class="secondary micro-button" type="button">Save current</button>
+              <button id="exportCustomPresetsBtn" class="secondary micro-button" type="button">Export JSON</button>
+              <button id="importCustomPresetsBtn" class="secondary micro-button" type="button">Import JSON</button>
+              <input id="importCustomPresetsFile" type="file" accept="application/json,.json" hidden>
+            </div>
           </div>
 
           <div class="grid">
@@ -1456,6 +1549,11 @@
       voiceList: document.querySelector("#voiceList"),
       selectedVoiceName: document.querySelector("#selectedVoiceName"),
       selectedVoiceMeta: document.querySelector("#selectedVoiceMeta"),
+      saveCustomPresetBtn: document.querySelector("#saveCustomPresetBtn"),
+      exportCustomPresetsBtn: document.querySelector("#exportCustomPresetsBtn"),
+      importCustomPresetsBtn: document.querySelector("#importCustomPresetsBtn"),
+      importCustomPresetsFile: document.querySelector("#importCustomPresetsFile"),
+      customPresetCount: document.querySelector("#customPresetCount"),
       speed: document.querySelector("#speed"),
       speedNum: document.querySelector("#speedNum"),
       pitch: document.querySelector("#pitch"),
@@ -1474,10 +1572,13 @@
 
     let currentUrls = [];
     let selectedPresetId = "en-calm-space-ai";
+    let customVoiceRecipes = [];
 
     function init() {
+      customVoiceRecipes = loadCustomVoiceRecipes();
       selectedPresetId = "en-calm-space-ai";
       renderVoiceList();
+      updateCustomPresetCount();
       applyPresetToControls(getPreset());
       updateSelectedVoice();
 
@@ -1494,6 +1595,11 @@
         if (event.key === "Escape") closeVoiceDrawer();
       });
 
+      el.saveCustomPresetBtn.addEventListener("click", saveCurrentAsCustomPreset);
+      el.exportCustomPresetsBtn.addEventListener("click", exportCustomPresets);
+      el.importCustomPresetsBtn.addEventListener("click", () => el.importCustomPresetsFile.click());
+      el.importCustomPresetsFile.addEventListener("change", importCustomPresetsFromFile);
+
       el.generateBtn.addEventListener("click", generate);
       el.demoBtn.addEventListener("click", () => {
         el.textInput.value = "Robo Phonix online. Voice engine stable. Robot synthesis ready for deployment.";
@@ -1505,8 +1611,12 @@
       number.addEventListener("input", () => range.value = number.value);
     }
 
+    function getAllVoiceRecipes() {
+      return [...presets, ...customVoiceRecipes];
+    }
+
     function getPreset() {
-      return presets.find((preset) => preset.id === selectedPresetId) || presets[0];
+      return getAllVoiceRecipes().find((preset) => preset.id === selectedPresetId) || presets[0];
     }
 
     function applyPresetToControls(preset) {
@@ -1526,7 +1636,7 @@
 
     function renderVoiceList() {
       const query = (el.voiceSearch.value || "").trim().toLowerCase();
-      const matches = presets.filter((preset) => {
+      const matches = getAllVoiceRecipes().filter((preset) => {
         const haystack = `${preset.label} ${preset.desc || ""} ${preset.voice} ${preset.engine || ""} ${(preset.tags || []).join(" ")}`.toLowerCase();
         return haystack.includes(query);
       });
@@ -1544,22 +1654,34 @@
       matches.forEach((preset) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = `voice-card${preset.id === selectedPresetId ? " is-selected" : ""}`;
+        button.className = `voice-card${preset.id === selectedPresetId ? " is-selected" : ""}${preset.custom ? " is-custom" : ""}`;
         button.innerHTML = `
           <span>
             <span class="voice-card-title">${escapeHtml(cleanVoiceName(preset.label))}</span>
             <span class="voice-card-desc">${escapeHtml(preset.desc || "")}</span>
-            <span class="voice-card-code">${escapeHtml(preset.voice)}</span>
+            <span class="voice-card-code">${escapeHtml(preset.custom ? "custom" : preset.voice)}</span>
           </span>
-          <span class="voice-card-check">${preset.id === selectedPresetId ? "✓" : ""}</span>
+          <span class="voice-card-actions">
+            <span class="voice-card-check">${preset.id === selectedPresetId ? "✓" : ""}</span>
+            ${preset.custom ? `<span class="voice-card-delete" data-delete-id="${escapeHtml(preset.id)}">×</span>` : ""}
+          </span>
         `;
-        button.addEventListener("click", () => {
+
+        button.addEventListener("click", (event) => {
+          const deleteId = event.target?.dataset?.deleteId;
+          if (deleteId) {
+            event.stopPropagation();
+            deleteCustomPreset(deleteId);
+            return;
+          }
+
           selectedPresetId = preset.id;
           applyPresetToControls(preset);
           updateSelectedVoice();
           renderVoiceList();
           closeVoiceDrawer();
         });
+
         el.voiceList.appendChild(button);
       });
     }
@@ -1589,7 +1711,174 @@
     }
 
     function cleanVoiceName(label) {
-      return label.replace(/^EN\s+/i, "").replace(/^NL\s+/i, "").replace(/^DE\s+/i, "").replace(/^ES\s+/i, "");
+      return label.replace(/^EN\s+/i, "").replace(/^NL\s+/i, "").replace(/^DE\s+/i, "").replace(/^ES\s+/i, "").replace(/^CUSTOM\s+/i, "");
+    }
+
+    function loadCustomVoiceRecipes() {
+      try {
+        const raw = localStorage.getItem("roboPhonixCustomPresets");
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map(sanitizeCustomPreset).filter(Boolean);
+      } catch {
+        return [];
+      }
+    }
+
+    function persistCustomVoiceRecipes() {
+      localStorage.setItem("roboPhonixCustomPresets", JSON.stringify(customVoiceRecipes));
+      updateCustomPresetCount();
+    }
+
+    function updateCustomPresetCount() {
+      const count = customVoiceRecipes.length;
+      el.customPresetCount.textContent = `${count} saved`;
+    }
+
+    function saveCurrentAsCustomPreset() {
+      const base = getPreset();
+      const name = prompt("Custom preset name", `Custom ${cleanVoiceName(base.label)}`);
+      if (!name || !name.trim()) return;
+
+      const custom = {
+        id: makeCustomPresetId(name),
+        custom: true,
+        engine: base.engine || "espeak",
+        desc: "Custom saved preset",
+        tags: ["custom"],
+        label: `CUSTOM ${name.trim()}`,
+        voice: base.voice,
+        speed: clampInt(el.speed.value, 80, 260),
+        pitch: clampInt(el.pitch.value, 0, 99),
+        amp: clampInt(el.amp.value, 20, 200),
+        fx: { ...(base.fx || {}) },
+        createdAt: new Date().toISOString()
+      };
+
+      customVoiceRecipes.push(custom);
+      persistCustomVoiceRecipes();
+      selectedPresetId = custom.id;
+      updateSelectedVoice();
+      renderVoiceList();
+      setStatus("<strong>Saved.</strong> Custom preset stored in this browser.");
+    }
+
+    function deleteCustomPreset(id) {
+      const preset = customVoiceRecipes.find((item) => item.id === id);
+      if (!preset) return;
+      if (!confirm(`Delete custom preset "${cleanVoiceName(preset.label)}"?`)) return;
+
+      customVoiceRecipes = customVoiceRecipes.filter((item) => item.id !== id);
+      if (selectedPresetId === id) {
+        selectedPresetId = "en-calm-space-ai";
+        applyPresetToControls(getPreset());
+        updateSelectedVoice();
+      }
+      persistCustomVoiceRecipes();
+      renderVoiceList();
+      setStatus("<strong>Deleted.</strong> Custom preset removed.");
+    }
+
+    function exportCustomPresets() {
+      const payload = {
+        app: "Robo Phonix",
+        type: "custom-presets",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        presets: customVoiceRecipes
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      currentUrls.push(url);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `robo-phonix-presets-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setStatus("<strong>Exported.</strong> Custom presets saved as JSON.");
+    }
+
+    async function importCustomPresetsFromFile(event) {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const source = Array.isArray(parsed) ? parsed : parsed.presets;
+        if (!Array.isArray(source)) throw new Error("No presets array found.");
+
+        const imported = source.map(sanitizeCustomPreset).filter(Boolean);
+        if (!imported.length) throw new Error("No valid custom presets found.");
+
+        const existingIds = new Set(customVoiceRecipes.map((item) => item.id));
+        const merged = imported.map((item) => {
+          let id = item.id;
+          while (existingIds.has(id) || presets.some((preset) => preset.id === id)) {
+            id = `${item.id}-${Math.random().toString(36).slice(2, 6)}`;
+          }
+          existingIds.add(id);
+          return { ...item, id, custom: true };
+        });
+
+        customVoiceRecipes = [...customVoiceRecipes, ...merged];
+        persistCustomVoiceRecipes();
+        renderVoiceList();
+        setStatus(`<strong>Imported.</strong> ${merged.length} custom preset${merged.length === 1 ? "" : "s"} added.`);
+      } catch (error) {
+        setStatus(`<strong>Import failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+      }
+    }
+
+    function sanitizeCustomPreset(value) {
+      if (!value || typeof value !== "object") return null;
+      if (!value.voice || !value.label) return null;
+
+      const fx = value.fx && typeof value.fx === "object" ? value.fx : {};
+      return {
+        id: String(value.id || makeCustomPresetId(value.label)).replace(/[^a-z0-9_-]/gi, "-").toLowerCase(),
+        custom: true,
+        engine: "espeak",
+        desc: String(value.desc || "Custom imported preset").slice(0, 80),
+        tags: Array.isArray(value.tags) ? value.tags.map(String).slice(0, 12) : ["custom"],
+        label: String(value.label).slice(0, 80),
+        voice: String(value.voice).slice(0, 80),
+        speed: clampInt(value.speed, 80, 260),
+        pitch: clampInt(value.pitch, 0, 99),
+        amp: clampInt(value.amp, 20, 200),
+        fx: sanitizeFx(fx),
+        createdAt: value.createdAt || new Date().toISOString()
+      };
+    }
+
+    function sanitizeFx(fx) {
+      const allowed = [
+        "ringFreq", "ringDepth", "bitDepth", "echoMs", "echoFeedback",
+        "highpass", "lowpass", "formant", "combMs", "combMix", "combFeedback",
+        "noise", "wobbleFreq", "wobbleDepth", "drive", "ceiling"
+      ];
+      const clean = {};
+      allowed.forEach((key) => {
+        const value = Number(fx[key]);
+        if (Number.isFinite(value)) clean[key] = value;
+      });
+      return clean;
+    }
+
+    function makeCustomPresetId(name) {
+      const slug = String(name)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 42) || "custom";
+      return `custom-${slug}-${Date.now().toString(36)}`;
     }
 
     function setStatus(message, isError = false) {
