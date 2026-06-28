@@ -2028,6 +2028,124 @@
         brightness: .32,
         outputDrive: 1.0,
         ceiling: .96
+      },
+      {
+        id: "vocoder-hard-rap-droid",
+        label: "Hard Rap Droid",
+        desc: "Punchy, dry and aggressive rap vocoder",
+        tags: ["rap", "hard", "dry", "punch"],
+        carrier: "hard-square-pulse",
+        baseFreq: 118,
+        fftSize: 2048,
+        hopFactor: 4,
+        low: 85,
+        high: 9400,
+        envelopeSmooth: 7,
+        formantHold: .9,
+        carrierTexture: .9,
+        carrierFloor: .16,
+        consonants: .085,
+        unvoiced: .045,
+        guide: .018,
+        body: .1,
+        brightness: .48,
+        outputDrive: 1.07,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-talking-calculator",
+        label: "Talking Calculator",
+        desc: "Small vintage computer voice, narrow and dry",
+        tags: ["retro", "computer", "small", "vintage"],
+        carrier: "square",
+        baseFreq: 72,
+        fftSize: 2048,
+        hopFactor: 4,
+        low: 110,
+        high: 6200,
+        envelopeSmooth: 14,
+        formantHold: .7,
+        carrierTexture: .54,
+        carrierFloor: .32,
+        consonants: .06,
+        unvoiced: .035,
+        guide: .04,
+        body: .06,
+        brightness: -.02,
+        outputDrive: .98,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-bass-talkbox-droid",
+        label: "Bass Talkbox Droid",
+        desc: "Thick low carrier with musical mouth movement",
+        tags: ["bass", "talkbox", "funk", "thick"],
+        carrier: "deep-buzz",
+        baseFreq: 66,
+        fftSize: 2048,
+        hopFactor: 4,
+        low: 60,
+        high: 7800,
+        envelopeSmooth: 9,
+        formantHold: .86,
+        carrierTexture: .76,
+        carrierFloor: .24,
+        consonants: .07,
+        unvoiced: .04,
+        guide: .03,
+        body: .32,
+        brightness: .14,
+        outputDrive: 1.04,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-space-command-voice",
+        label: "Space Command Voice",
+        desc: "Large controlled sci-fi command vocoder",
+        tags: ["space", "command", "sci-fi", "clean"],
+        carrier: "robot-chord",
+        baseFreq: 96,
+        fftSize: 2048,
+        hopFactor: 4,
+        low: 70,
+        high: 9200,
+        envelopeSmooth: 10,
+        formantHold: .83,
+        carrierTexture: .72,
+        carrierFloor: .24,
+        consonants: .085,
+        unvoiced: .055,
+        guide: .035,
+        body: .2,
+        brightness: .34,
+        outputDrive: 1.03,
+        ceiling: .96
+      },
+      {
+        id: "vocoder-broken-transmission-bot",
+        label: "Broken Transmission Bot",
+        desc: "Damaged vocoder signal with controlled dropouts",
+        tags: ["broken", "glitch", "radio", "damaged"],
+        carrier: "hard-square-pulse",
+        baseFreq: 101,
+        fftSize: 2048,
+        hopFactor: 4,
+        low: 120,
+        high: 7600,
+        envelopeSmooth: 8,
+        formantHold: .76,
+        carrierTexture: .74,
+        carrierFloor: .22,
+        consonants: .1,
+        unvoiced: .06,
+        guide: .03,
+        body: .08,
+        brightness: .22,
+        outputDrive: 1.05,
+        wobble: .022,
+        dropout: .13,
+        crush: .34,
+        ceiling: .95
       }
     ];
 
@@ -3456,7 +3574,43 @@
         result[i] = softClip(x * outputDrive);
       }
 
-      return result;
+      return applyVocoderCharacter(result, sampleRate, recipe);
+    }
+
+    function applyVocoderCharacter(input, sampleRate, recipe) {
+      const wobble = clamp(Number(recipe.wobble) || 0, 0, .08);
+      const dropout = clamp(Number(recipe.dropout) || 0, 0, .35);
+      const crush = clamp(Number(recipe.crush) || 0, 0, .8);
+
+      if (!wobble && !dropout && !crush) {
+        return input;
+      }
+
+      const output = new Float32Array(input.length);
+      let hold = 0;
+      let holdCount = 0;
+
+      for (let i = 0; i < input.length; i++) {
+        const t = i / sampleRate;
+        const wobbleGain = wobble ? 1 - wobble * .7 + Math.sin(2 * Math.PI * 5.2 * t) * wobble : 1;
+        const dropoutGate = dropout ? (Math.sin(2 * Math.PI * 11.7 * t) > 1 - dropout * 1.7 ? .28 : 1) : 1;
+
+        let x = input[i] * wobbleGain * dropoutGate;
+
+        if (crush) {
+          if (holdCount <= 0) {
+            hold = x;
+            holdCount = Math.max(1, Math.round(1 + crush * 9));
+          }
+          holdCount--;
+          const steps = Math.max(16, Math.round(2048 * (1 - crush) + 32));
+          x = Math.round(hold * steps) / steps;
+        }
+
+        output[i] = softClip(x);
+      }
+
+      return output;
     }
 
     function spectralEnvelopeFollower(input, sampleRate, attackMs, releaseMs) {
