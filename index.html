@@ -910,6 +910,78 @@
       gap: 8px;
     }
 
+
+    .mic-record-lab {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(255,0,174,.18), rgba(255,255,255,.42), rgba(193,255,26,.16));
+      border: 1px solid rgba(10,10,10,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+    }
+
+    .mic-record-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #0a0a0a;
+    }
+
+    .mic-record-head span {
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .mic-record-head small {
+      min-width: 48px;
+      color: rgba(0,0,0,.62);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .mic-record-display {
+      display: grid;
+      gap: 5px;
+      padding: 16px;
+      border-radius: 18px;
+      color: #0a0a0a;
+      background: rgba(255,255,255,.58);
+      border: 1px solid rgba(10,10,10,.12);
+    }
+
+    .mic-record-display.is-recording {
+      background:
+        radial-gradient(circle at 92% 50%, rgba(255,0,174,.18), transparent 8rem),
+        rgba(255,255,255,.62);
+      border-color: rgba(255,0,174,.34);
+    }
+
+    .mic-record-display strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .mic-record-display small {
+      color: rgba(0,0,0,.66);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .mic-record-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     @media (max-width: 860px) {
       .hero-robot-stage {
         opacity: .28;
@@ -1043,6 +1115,25 @@
               <span>Audio Robotizer</span>
               <small>MP3 / WAV</small>
             </div>
+
+          <div class="mic-record-lab">
+            <div class="mic-record-head">
+              <span>Mic Recorder</span>
+              <small id="recordingTimer">00:00</small>
+            </div>
+
+            <div class="mic-record-display">
+              <strong id="recordingTitle">No recording yet</strong>
+              <small id="recordingMeta">Record your voice, then robotize it with the selected preset</small>
+            </div>
+
+            <div class="mic-record-actions">
+              <button id="startRecordingBtn" class="secondary micro-button" type="button">Start recording</button>
+              <button id="stopRecordingBtn" class="secondary micro-button" type="button" disabled>Stop</button>
+              <button id="processRecordingBtn" class="secondary micro-button" type="button" disabled>Robotize recording</button>
+              <button id="clearRecordingBtn" class="secondary micro-button" type="button" disabled>Clear</button>
+            </div>
+          </div>
 
             <label class="audio-drop" for="audioUploadInput">
               <strong id="audioUploadTitle">Drop or choose audio</strong>
@@ -1650,6 +1741,14 @@
       processAudioBtn: document.querySelector("#processAudioBtn"),
       clearAudioBtn: document.querySelector("#clearAudioBtn"),
       audioDrop: document.querySelector(".audio-drop"),
+      startRecordingBtn: document.querySelector("#startRecordingBtn"),
+      stopRecordingBtn: document.querySelector("#stopRecordingBtn"),
+      processRecordingBtn: document.querySelector("#processRecordingBtn"),
+      clearRecordingBtn: document.querySelector("#clearRecordingBtn"),
+      recordingTitle: document.querySelector("#recordingTitle"),
+      recordingMeta: document.querySelector("#recordingMeta"),
+      recordingTimer: document.querySelector("#recordingTimer"),
+      micRecordDisplay: document.querySelector(".mic-record-display"),
       speed: document.querySelector("#speed"),
       speedNum: document.querySelector("#speedNum"),
       pitch: document.querySelector("#pitch"),
@@ -1670,6 +1769,12 @@
     let selectedPresetId = "en-calm-space-ai";
     let customVoiceRecipes = [];
     let uploadedAudioFile = null;
+    let recordedAudioFile = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordingStream = null;
+    let recordingStartedAt = 0;
+    let recordingTimerId = null;
 
     function init() {
       customVoiceRecipes = loadCustomVoiceRecipes();
@@ -1703,6 +1808,11 @@
       el.audioDrop.addEventListener("dragover", handleAudioDragOver);
       el.audioDrop.addEventListener("dragleave", handleAudioDragLeave);
       el.audioDrop.addEventListener("drop", handleAudioDrop);
+
+      el.startRecordingBtn.addEventListener("click", startMicRecording);
+      el.stopRecordingBtn.addEventListener("click", stopMicRecording);
+      el.processRecordingBtn.addEventListener("click", processRecordedAudio);
+      el.clearRecordingBtn.addEventListener("click", clearRecordedAudio);
 
       el.generateBtn.addEventListener("click", generate);
       el.demoBtn.addEventListener("click", () => {
@@ -2147,6 +2257,231 @@
         : "audio";
       const stamp = new Date().toISOString().slice(0, 10);
       return `${base}_${preset}_robotized_${stamp}.${extension}`;
+    }
+
+    async function startMicRecording() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error("Microphone recording is not supported in this browser.");
+        }
+
+        clearRecordedAudio(false);
+
+        recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = pickSupportedRecordingMimeType();
+        const options = mimeType ? { mimeType } : undefined;
+
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(recordingStream, options);
+
+        mediaRecorder.addEventListener("dataavailable", (event) => {
+          if (event.data && event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        });
+
+        mediaRecorder.addEventListener("stop", () => {
+          finalizeMicRecording(mimeType || mediaRecorder.mimeType || "audio/webm");
+        });
+
+        mediaRecorder.start();
+        recordingStartedAt = Date.now();
+        startRecordingTimer();
+
+        el.micRecordDisplay.classList.add("is-recording");
+        el.recordingTitle.textContent = "Recording...";
+        el.recordingMeta.textContent = "Speak now. Click Stop when finished.";
+        el.startRecordingBtn.disabled = true;
+        el.stopRecordingBtn.disabled = false;
+        el.processRecordingBtn.disabled = true;
+        el.clearRecordingBtn.disabled = true;
+
+        setStatus("<strong>Recording.</strong> Microphone input is active.");
+      } catch (error) {
+        cleanupRecordingStream();
+        setStatus(`<strong>Mic failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+      }
+    }
+
+    function stopMicRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+      stopRecordingTimer();
+      el.stopRecordingBtn.disabled = true;
+      el.recordingMeta.textContent = "Finalizing recording...";
+      cleanupRecordingStream();
+    }
+
+    function finalizeMicRecording(mimeType) {
+      if (!recordedChunks.length) {
+        el.recordingTitle.textContent = "No recording captured";
+        el.recordingMeta.textContent = "Try recording again.";
+        el.startRecordingBtn.disabled = false;
+        el.processRecordingBtn.disabled = true;
+        el.clearRecordingBtn.disabled = true;
+        el.micRecordDisplay.classList.remove("is-recording");
+        return;
+      }
+
+      const extension = guessRecordingExtension(mimeType);
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      recordedAudioFile = new File([blob], `robo-phonix-recording.${extension}`, { type: mimeType });
+
+      el.recordingTitle.textContent = "Recording ready";
+      el.recordingMeta.textContent = `${formatBytes(recordedAudioFile.size)} · ready for robot FX`;
+      el.startRecordingBtn.disabled = false;
+      el.stopRecordingBtn.disabled = true;
+      el.processRecordingBtn.disabled = false;
+      el.clearRecordingBtn.disabled = false;
+      el.micRecordDisplay.classList.remove("is-recording");
+
+      setStatus("<strong>Recording ready.</strong> Choose a voice preset and click Robotize recording.");
+    }
+
+    function clearRecordedAudio(showStatus = true) {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+
+      stopRecordingTimer();
+      cleanupRecordingStream();
+
+      recordedAudioFile = null;
+      recordedChunks = [];
+      mediaRecorder = null;
+
+      el.recordingTitle.textContent = "No recording yet";
+      el.recordingMeta.textContent = "Record your voice, then robotize it with the selected preset";
+      el.recordingTimer.textContent = "00:00";
+      el.startRecordingBtn.disabled = false;
+      el.stopRecordingBtn.disabled = true;
+      el.processRecordingBtn.disabled = true;
+      el.clearRecordingBtn.disabled = true;
+      el.micRecordDisplay.classList.remove("is-recording");
+
+      if (showStatus) {
+        setStatus("<strong>Cleared.</strong> Microphone recording removed.");
+      }
+    }
+
+    async function processRecordedAudio() {
+      if (!recordedAudioFile) {
+        setStatus("<strong>No recording.</strong> Record audio first.", true);
+        return;
+      }
+
+      const preset = getPreset();
+      const kbps = clampInt(el.kbps.value, 64, 192);
+
+      try {
+        lockRecordingUi(true);
+        revokeUrls();
+        setStatus("<strong>Step 1 of 3.</strong> Decoding microphone recording.");
+
+        const decoded = await decodeUploadedAudioFile(recordedAudioFile);
+        const mono = mixAudioBufferToMono(decoded);
+
+        setStatus("<strong>Step 2 of 3.</strong> Applying robot FX chain.");
+
+        const processed = applyRobotFx(mono, decoded.sampleRate, preset.fx);
+        const int16 = floatToInt16(processed);
+
+        setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
+
+        const wavBlob = encodeWavMono(int16, decoded.sampleRate);
+        const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
+
+        const mp3Url = URL.createObjectURL(mp3Blob);
+        const wavUrl = URL.createObjectURL(wavBlob);
+        currentUrls.push(mp3Url, wavUrl);
+
+        el.audioPlayer.src = mp3Url;
+        el.downloadMp3.href = mp3Url;
+        el.downloadWav.href = wavUrl;
+        el.downloadMp3.download = makeRecordingRobotizerFileName("mp3");
+        el.downloadWav.download = makeRecordingRobotizerFileName("wav");
+        el.downloadMp3.classList.remove("disabled");
+        el.downloadWav.classList.remove("disabled");
+
+        const seconds = (int16.length / decoded.sampleRate).toFixed(1);
+        setStatus(`<strong>Ready.</strong> Robotized recording: ${seconds} sec · MP3 ${kbps} kbps.`);
+      } catch (error) {
+        console.error(error);
+        setStatus(`<strong>Recording failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+      } finally {
+        lockRecordingUi(false);
+      }
+    }
+
+    function lockRecordingUi(isLocked) {
+      el.startRecordingBtn.disabled = isLocked;
+      el.stopRecordingBtn.disabled = true;
+      el.processRecordingBtn.disabled = isLocked || !recordedAudioFile;
+      el.clearRecordingBtn.disabled = isLocked || !recordedAudioFile;
+      el.processRecordingBtn.textContent = isLocked ? "Processing..." : "Robotize recording";
+    }
+
+    function pickSupportedRecordingMimeType() {
+      const candidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/mp4",
+        "audio/aac"
+      ];
+
+      if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
+        return "";
+      }
+
+      return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+    }
+
+    function guessRecordingExtension(mimeType) {
+      if (/mp4/i.test(mimeType)) return "m4a";
+      if (/aac/i.test(mimeType)) return "aac";
+      if (/ogg/i.test(mimeType)) return "ogg";
+      if (/webm/i.test(mimeType)) return "webm";
+      return "webm";
+    }
+
+    function startRecordingTimer() {
+      stopRecordingTimer();
+      updateRecordingTimer();
+      recordingTimerId = setInterval(updateRecordingTimer, 250);
+    }
+
+    function stopRecordingTimer() {
+      if (recordingTimerId) {
+        clearInterval(recordingTimerId);
+        recordingTimerId = null;
+      }
+    }
+
+    function updateRecordingTimer() {
+      if (!recordingStartedAt) {
+        el.recordingTimer.textContent = "00:00";
+        return;
+      }
+
+      const seconds = Math.max(0, Math.floor((Date.now() - recordingStartedAt) / 1000));
+      const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const secs = String(seconds % 60).padStart(2, "0");
+      el.recordingTimer.textContent = `${mins}:${secs}`;
+    }
+
+    function cleanupRecordingStream() {
+      if (recordingStream) {
+        recordingStream.getTracks().forEach((track) => track.stop());
+        recordingStream = null;
+      }
+    }
+
+    function makeRecordingRobotizerFileName(extension) {
+      const preset = getPreset().id;
+      const stamp = new Date().toISOString().slice(0, 10);
+      return `mic-recording_${preset}_robotized_${stamp}.${extension}`;
     }
 
     async function generate() {
