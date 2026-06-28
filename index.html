@@ -2165,9 +2165,10 @@
         const decoded = await decodeUploadedAudioFile(uploadedAudioFile);
         const mono = mixAudioBufferToMono(decoded);
 
-        setStatus("<strong>Step 2 of 3.</strong> Applying robot FX chain.");
+        setStatus("<strong>Step 2 of 3.</strong> Applying preset voice shaping and robot FX.");
 
-        const processed = applyRobotFx(mono, decoded.sampleRate, preset.fx);
+        const shaped = applyExternalPresetShaping(mono, decoded.sampleRate, preset);
+        const processed = applyRobotFx(shaped.samples, decoded.sampleRate, preset.fx);
         const int16 = floatToInt16(processed);
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
@@ -2382,9 +2383,10 @@
         const decoded = await decodeUploadedAudioFile(recordedAudioFile);
         const mono = mixAudioBufferToMono(decoded);
 
-        setStatus("<strong>Step 2 of 3.</strong> Applying robot FX chain.");
+        setStatus("<strong>Step 2 of 3.</strong> Applying preset voice shaping and robot FX.");
 
-        const processed = applyRobotFx(mono, decoded.sampleRate, preset.fx);
+        const shaped = applyExternalPresetShaping(mono, decoded.sampleRate, preset);
+        const processed = applyRobotFx(shaped.samples, decoded.sampleRate, preset.fx);
         const int16 = floatToInt16(processed);
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
@@ -2646,6 +2648,63 @@
       }
 
       return mono;
+    }
+
+    function applyExternalPresetShaping(input, sampleRate, preset) {
+      const baseSpeed = 140;
+      const basePitch = 35;
+      const baseAmp = 130;
+
+      const speed = clampInt(preset.speed ?? baseSpeed, 80, 260);
+      const pitch = clampInt(preset.pitch ?? basePitch, 0, 99);
+      const amp = clampInt(preset.amp ?? baseAmp, 20, 200);
+
+      const speedRatio = clamp(speed / baseSpeed, .55, 1.9);
+      const pitchShape = clamp((pitch - basePitch) / 64, -1, 1);
+      const gain = clamp(amp / baseAmp, .15, 2.2);
+
+      let output = input;
+
+      if (Math.abs(speedRatio - 1) > .015) {
+        output = resampleByRatio(output, speedRatio);
+      }
+
+      if (Math.abs(pitchShape) > .02) {
+        output = formantShape(output, sampleRate, pitchShape * .85);
+      }
+
+      output = applyGain(output, gain);
+
+      return { samples: output, sampleRate };
+    }
+
+    function resampleByRatio(input, ratio) {
+      const safeRatio = clamp(Number(ratio) || 1, .4, 2.5);
+      const outputLength = Math.max(1, Math.round(input.length / safeRatio));
+      const output = new Float32Array(outputLength);
+
+      for (let i = 0; i < outputLength; i++) {
+        const sourceIndex = i * safeRatio;
+        const index0 = Math.floor(sourceIndex);
+        const index1 = Math.min(input.length - 1, index0 + 1);
+        const frac = sourceIndex - index0;
+        const a = input[index0] || 0;
+        const b = input[index1] || 0;
+        output[i] = a + (b - a) * frac;
+      }
+
+      return output;
+    }
+
+    function applyGain(input, gain) {
+      const output = new Float32Array(input.length);
+      const g = Number(gain) || 1;
+
+      for (let i = 0; i < input.length; i++) {
+        output[i] = clamp(input[i] * g, -1, 1);
+      }
+
+      return output;
     }
 
     function applyRobotFx(input, sampleRate, fx = {}) {
