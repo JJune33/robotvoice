@@ -1088,6 +1088,81 @@
       color: #ffffff;
     }
 
+
+    .signal-visualizer {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 22px;
+      color: #ffffff;
+      background:
+        radial-gradient(circle at 12% 12%, rgba(193,255,26,.22), transparent 9rem),
+        radial-gradient(circle at 88% 4%, rgba(255,0,174,.24), transparent 10rem),
+        linear-gradient(135deg, rgba(5,5,5,.92), rgba(14,14,14,.88));
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow:
+        0 18px 34px rgba(0,0,0,.16),
+        inset 0 1px 0 rgba(255,255,255,.12);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .signal-visualizer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px);
+      background-size: 18px 18px;
+      opacity: .2;
+      pointer-events: none;
+    }
+
+    .signal-visualizer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .signal-visualizer-head span {
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .signal-visualizer-head small {
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .visualizer-canvas {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.035));
+      border: 1px solid rgba(255,255,255,.12);
+      position: relative;
+      z-index: 1;
+    }
+
+    .waveform-canvas {
+      height: 150px;
+    }
+
+    .spectrum-canvas {
+      height: 112px;
+    }
+
     @media (max-width: 860px) {
       .hero-robot-stage {
         opacity: .28;
@@ -1367,6 +1442,15 @@
         </div>
         <div class="card-body">
           <audio id="audioPlayer" controls></audio>
+
+          <div class="signal-visualizer" aria-label="Audio visualizer">
+            <div class="signal-visualizer-head">
+              <span id="visualizerTitle">Signal Visualizer</span>
+              <small id="visualizerMeta">Waiting for output</small>
+            </div>
+            <canvas id="waveformCanvas" class="visualizer-canvas waveform-canvas" width="720" height="170"></canvas>
+            <canvas id="spectrumCanvas" class="visualizer-canvas spectrum-canvas" width="720" height="130"></canvas>
+          </div>
           <div class="buttons">
             <a id="downloadMp3" class="download disabled" download="robot-voice.mp3" href="#">Download MP3</a>
             <a id="downloadWav" class="download secondary disabled" download="robot-voice.wav" href="#">Download WAV</a>
@@ -2201,6 +2285,10 @@
       demoBtn: document.querySelector("#demoBtn"),
       status: document.querySelector("#status"),
       audioPlayer: document.querySelector("#audioPlayer"),
+      waveformCanvas: document.querySelector("#waveformCanvas"),
+      spectrumCanvas: document.querySelector("#spectrumCanvas"),
+      visualizerTitle: document.querySelector("#visualizerTitle"),
+      visualizerMeta: document.querySelector("#visualizerMeta"),
       downloadMp3: document.querySelector("#downloadMp3"),
       downloadWav: document.querySelector("#downloadWav")
     };
@@ -2217,6 +2305,15 @@
     let recordingStream = null;
     let recordingStartedAt = 0;
     let recordingTimerId = null;
+    let visualizerState = {
+      samples: null,
+      sampleRate: 0,
+      duration: 0,
+      spectrum: [],
+      title: "Signal Visualizer",
+      meta: "Waiting for output"
+    };
+    let visualizerFrameId = null;
 
     function init() {
       customVoiceRecipes = loadCustomVoiceRecipes();
@@ -2270,6 +2367,16 @@
       el.demoBtn.addEventListener("click", () => {
         el.textInput.value = "Robo Phonix online. Voice engine stable. Robot synthesis ready for deployment.";
       });
+
+      el.audioPlayer.addEventListener("play", startVisualizerPlayback);
+      el.audioPlayer.addEventListener("pause", drawCurrentVisualizer);
+      el.audioPlayer.addEventListener("ended", () => {
+        stopVisualizerPlayback();
+        drawCurrentVisualizer();
+      });
+      el.audioPlayer.addEventListener("seeked", drawCurrentVisualizer);
+      window.addEventListener("resize", debounce(drawCurrentVisualizer, 120));
+      drawVisualizerPlaceholder();
     }
 
     function bindPair(range, number) {
@@ -2763,6 +2870,7 @@
         }
 
         const int16 = floatToInt16(processed);
+        updateVisualizerFromInt16(int16, decoded.sampleRate, isVocoder ? "Vocoder FX Upload" : "Robot FX Upload");
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
 
@@ -2989,6 +3097,7 @@
         }
 
         const int16 = floatToInt16(processed);
+        updateVisualizerFromInt16(int16, decoded.sampleRate, isVocoder ? "Vocoder FX Mic" : "Robot FX Mic");
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
 
@@ -3088,6 +3197,336 @@
       return `mic-recording_${preset}_${label}_${stamp}.${extension}`;
     }
 
+    function updateVisualizerFromInt16(int16, sampleRate, title) {
+      const samples = new Float32Array(int16.length);
+      let peak = 0;
+      let sum = 0;
+
+      for (let i = 0; i < int16.length; i++) {
+        const value = int16[i] / 32768;
+        samples[i] = value;
+        const abs = Math.abs(value);
+        if (abs > peak) peak = abs;
+        sum += value * value;
+      }
+
+      const duration = samples.length / sampleRate;
+      const rms = Math.sqrt(sum / Math.max(1, samples.length));
+      visualizerState = {
+        samples,
+        sampleRate,
+        duration,
+        spectrum: computeVisualizerSpectrum(samples, sampleRate, 54),
+        title,
+        meta: `${duration.toFixed(1)} sec · peak ${(peak * 100).toFixed(0)}% · rms ${(rms * 100).toFixed(0)}%`
+      };
+
+      el.visualizerTitle.textContent = title;
+      el.visualizerMeta.textContent = visualizerState.meta;
+      drawCurrentVisualizer();
+    }
+
+    function drawVisualizerPlaceholder() {
+      visualizerState = {
+        samples: null,
+        sampleRate: 0,
+        duration: 0,
+        spectrum: [],
+        title: "Signal Visualizer",
+        meta: "Waiting for output"
+      };
+      el.visualizerTitle.textContent = visualizerState.title;
+      el.visualizerMeta.textContent = visualizerState.meta;
+      drawWaveformCanvas(null, 0);
+      drawSpectrumCanvas([]);
+    }
+
+    function startVisualizerPlayback() {
+      stopVisualizerPlayback();
+      const loop = () => {
+        drawCurrentVisualizer();
+        if (!el.audioPlayer.paused && !el.audioPlayer.ended) {
+          visualizerFrameId = requestAnimationFrame(loop);
+        }
+      };
+      loop();
+    }
+
+    function stopVisualizerPlayback() {
+      if (visualizerFrameId) {
+        cancelAnimationFrame(visualizerFrameId);
+        visualizerFrameId = null;
+      }
+    }
+
+    function drawCurrentVisualizer() {
+      const samples = visualizerState.samples;
+      let progress = 0;
+
+      if (samples && el.audioPlayer.duration && Number.isFinite(el.audioPlayer.duration)) {
+        progress = clamp(el.audioPlayer.currentTime / el.audioPlayer.duration, 0, 1);
+      }
+
+      drawWaveformCanvas(samples, progress);
+      drawSpectrumCanvas(visualizerState.spectrum || [], progress);
+    }
+
+    function drawWaveformCanvas(samples, progress = 0) {
+      const fit = fitVisualizerCanvas(el.waveformCanvas);
+      const ctx = fit.ctx;
+      const width = fit.width;
+      const height = fit.height;
+      const mid = height * .52;
+
+      drawVisualizerBase(ctx, width, height, "waveform");
+
+      ctx.save();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(193,255,26,.18)";
+      for (let y = 18; y < height; y += 22) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      if (!samples || !samples.length) {
+        drawVisualizerEmptyText(ctx, width, height, "Generate, upload or record audio");
+        return;
+      }
+
+      const columns = Math.max(80, Math.floor(width));
+      const samplesPerColumn = Math.max(1, Math.floor(samples.length / columns));
+      const columnWidth = width / columns;
+
+      ctx.save();
+      const gradient = ctx.createLinearGradient(0, 0, width, 0);
+      gradient.addColorStop(0, "rgba(193,255,26,.92)");
+      gradient.addColorStop(.52, "rgba(255,255,255,.86)");
+      gradient.addColorStop(1, "rgba(255,0,174,.92)");
+      ctx.fillStyle = gradient;
+      ctx.shadowColor = "rgba(193,255,26,.28)";
+      ctx.shadowBlur = 10;
+
+      for (let x = 0; x < columns; x++) {
+        const start = x * samplesPerColumn;
+        const end = Math.min(samples.length, start + samplesPerColumn);
+        let min = 0;
+        let max = 0;
+
+        for (let i = start; i < end; i++) {
+          const value = samples[i];
+          if (value < min) min = value;
+          if (value > max) max = value;
+        }
+
+        const top = mid - max * height * .42;
+        const bottom = mid - min * height * .42;
+        const barHeight = Math.max(1.2, bottom - top);
+        ctx.fillRect(x * columnWidth, top, Math.max(1, columnWidth * .72), barHeight);
+      }
+      ctx.restore();
+
+      drawPlaybackCursor(ctx, width, height, progress);
+    }
+
+    function drawSpectrumCanvas(buckets, progress = 0) {
+      const fit = fitVisualizerCanvas(el.spectrumCanvas);
+      const ctx = fit.ctx;
+      const width = fit.width;
+      const height = fit.height;
+
+      drawVisualizerBase(ctx, width, height, "spectrum");
+
+      if (!buckets || !buckets.length) {
+        drawVisualizerEmptyText(ctx, width, height, "Spectrum will appear here");
+        return;
+      }
+
+      const gap = 3;
+      const count = buckets.length;
+      const barWidth = Math.max(2, (width - gap * (count - 1)) / count);
+      const gradient = ctx.createLinearGradient(0, height, 0, 0);
+      gradient.addColorStop(0, "rgba(193,255,26,.92)");
+      gradient.addColorStop(.54, "rgba(255,255,255,.78)");
+      gradient.addColorStop(1, "rgba(255,0,174,.9)");
+
+      ctx.save();
+      ctx.fillStyle = gradient;
+      ctx.shadowColor = "rgba(255,0,174,.24)";
+      ctx.shadowBlur = 12;
+
+      for (let i = 0; i < count; i++) {
+        const value = clamp(buckets[i], 0, 1);
+        const h = Math.max(2, Math.pow(value, .72) * (height - 20));
+        const x = i * (barWidth + gap);
+        const y = height - h - 8;
+        roundRect(ctx, x, y, barWidth, h, Math.min(7, barWidth * .45));
+        ctx.fill();
+      }
+      ctx.restore();
+
+      drawPlaybackCursor(ctx, width, height, progress, .42);
+    }
+
+    function drawVisualizerBase(ctx, width, height, type) {
+      ctx.clearRect(0, 0, width, height);
+
+      const bg = ctx.createLinearGradient(0, 0, width, height);
+      bg.addColorStop(0, "rgba(255,255,255,.055)");
+      bg.addColorStop(1, "rgba(0,0,0,.16)");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,.08)";
+      ctx.lineWidth = 1;
+      const step = type === "waveform" ? 28 : 24;
+      for (let x = 0; x < width; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawVisualizerEmptyText(ctx, width, height, text) {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.58)";
+      ctx.font = "700 13px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, width / 2, height / 2);
+      ctx.restore();
+    }
+
+    function drawPlaybackCursor(ctx, width, height, progress, opacity = .8) {
+      if (!progress) return;
+      const x = clamp(progress, 0, 1) * width;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,255,255,${opacity})`;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = "rgba(255,0,174,.65)";
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function fitVisualizerCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const width = Math.max(280, rect.width || canvas.clientWidth || 640);
+      const height = Math.max(90, rect.height || canvas.clientHeight || 120);
+      const pxWidth = Math.round(width * dpr);
+      const pxHeight = Math.round(height * dpr);
+
+      if (canvas.width !== pxWidth || canvas.height !== pxHeight) {
+        canvas.width = pxWidth;
+        canvas.height = pxHeight;
+      }
+
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, width, height };
+    }
+
+    function computeVisualizerSpectrum(samples, sampleRate, bucketCount = 54) {
+      if (!samples || !samples.length) return [];
+
+      const fftSize = 2048;
+      const frame = pickLoudestFrame(samples, fftSize);
+      const real = new Float32Array(fftSize);
+      const imag = new Float32Array(fftSize);
+      const window = makeHannWindow(fftSize);
+
+      for (let i = 0; i < fftSize; i++) {
+        real[i] = frame[i] * window[i];
+      }
+
+      fftRadix2(real, imag, false);
+
+      const buckets = new Array(bucketCount).fill(0);
+      const low = 60;
+      const high = Math.min(sampleRate / 2 - 100, 12000);
+      let max = 1e-8;
+
+      for (let b = 0; b < bucketCount; b++) {
+        const f0 = low * Math.pow(high / low, b / bucketCount);
+        const f1 = low * Math.pow(high / low, (b + 1) / bucketCount);
+        const k0 = Math.max(1, Math.floor(f0 * fftSize / sampleRate));
+        const k1 = Math.min(fftSize / 2 - 1, Math.ceil(f1 * fftSize / sampleRate));
+        let sum = 0;
+        let count = 0;
+
+        for (let k = k0; k <= k1; k++) {
+          const mag = Math.hypot(real[k], imag[k]);
+          sum += Math.log1p(mag * 10);
+          count++;
+        }
+
+        const value = sum / Math.max(1, count);
+        buckets[b] = value;
+        if (value > max) max = value;
+      }
+
+      return buckets.map((value) => clamp(value / max, 0, 1));
+    }
+
+    function pickLoudestFrame(samples, size) {
+      const frame = new Float32Array(size);
+      if (samples.length <= size) {
+        frame.set(samples.subarray(0, samples.length));
+        return frame;
+      }
+
+      const hop = Math.max(128, Math.floor(size / 4));
+      let bestStart = 0;
+      let bestEnergy = -1;
+
+      for (let start = 0; start + size <= samples.length; start += hop) {
+        let energy = 0;
+        for (let i = 0; i < size; i += 4) {
+          const value = samples[start + i];
+          energy += value * value;
+        }
+        if (energy > bestEnergy) {
+          bestEnergy = energy;
+          bestStart = start;
+        }
+      }
+
+      frame.set(samples.subarray(bestStart, bestStart + size));
+      return frame;
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + width - r, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+      ctx.lineTo(x + width, y + height - r);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      ctx.lineTo(x + r, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function debounce(fn, delay) {
+      let timer = null;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+      };
+    }
+
     async function generate() {
       if (engineMode === "vocoder") {
         setStatus("<strong>Vocoder FX.</strong> Use upload or microphone for vocoder processing. Switch to Robot FX for text to speech.", true);
@@ -3125,6 +3564,7 @@
         const mono = mixToMono(decoded);
         const processed = applyRobotFx(mono, decoded.sampleRate, preset.fx);
         const int16 = floatToInt16(processed);
+        updateVisualizerFromInt16(int16, decoded.sampleRate, "Robot FX TTS");
 
         setStatus("<strong>Stap 3 van 3.</strong> MP3 wordt gecodeerd.");
 
