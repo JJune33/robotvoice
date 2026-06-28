@@ -838,6 +838,78 @@
       filter: brightness(1.06);
     }
 
+
+    .audio-upload-lab {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(193,255,26,.18), rgba(255,255,255,.44), rgba(255,0,174,.16));
+      border: 1px solid rgba(10,10,10,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+    }
+
+    .audio-upload-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #0a0a0a;
+    }
+
+    .audio-upload-head span {
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .audio-upload-head small {
+      color: rgba(0,0,0,.62);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .audio-drop {
+      display: grid;
+      gap: 5px;
+      padding: 16px;
+      border-radius: 18px;
+      color: #0a0a0a;
+      background: rgba(255,255,255,.58);
+      border: 1px dashed rgba(10,10,10,.28);
+      cursor: pointer;
+      transition: filter .15s ease, border-color .15s ease, transform .15s ease;
+    }
+
+    .audio-drop:hover,
+    .audio-drop.is-dragover {
+      filter: brightness(1.03);
+      border-color: rgba(255,0,174,.45);
+      transform: translateY(-1px);
+    }
+
+    .audio-drop strong {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .audio-drop small {
+      color: rgba(0,0,0,.66);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .audio-upload-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     @media (max-width: 860px) {
       .hero-robot-stage {
         opacity: .28;
@@ -965,6 +1037,24 @@
             <textarea id="textInput">Robo Phonix online. Voice engine stable. Robot synthesis ready for deployment.</textarea>
             <span class="hint">Kortere teksten genereren sneller. Voor lange scripts kun je per alinea exporteren.</span>
           </label>
+
+          <div class="audio-upload-lab">
+            <div class="audio-upload-head">
+              <span>Audio Robotizer</span>
+              <small>MP3 / WAV</small>
+            </div>
+
+            <label class="audio-drop" for="audioUploadInput">
+              <strong id="audioUploadTitle">Drop or choose audio</strong>
+              <small id="audioUploadMeta">Use the selected voice preset as robot FX chain</small>
+              <input id="audioUploadInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden>
+            </label>
+
+            <div class="audio-upload-actions">
+              <button id="processAudioBtn" class="secondary micro-button" type="button" disabled>Robotize audio</button>
+              <button id="clearAudioBtn" class="secondary micro-button" type="button" disabled>Clear audio</button>
+            </div>
+          </div>
           <div class="voice-control">
             <div class="voice-label">Voice</div>
             <button id="openVoiceDrawer" class="voice-selected" type="button">
@@ -1554,6 +1644,12 @@
       importCustomPresetsBtn: document.querySelector("#importCustomPresetsBtn"),
       importCustomPresetsFile: document.querySelector("#importCustomPresetsFile"),
       customPresetCount: document.querySelector("#customPresetCount"),
+      audioUploadInput: document.querySelector("#audioUploadInput"),
+      audioUploadTitle: document.querySelector("#audioUploadTitle"),
+      audioUploadMeta: document.querySelector("#audioUploadMeta"),
+      processAudioBtn: document.querySelector("#processAudioBtn"),
+      clearAudioBtn: document.querySelector("#clearAudioBtn"),
+      audioDrop: document.querySelector(".audio-drop"),
       speed: document.querySelector("#speed"),
       speedNum: document.querySelector("#speedNum"),
       pitch: document.querySelector("#pitch"),
@@ -1573,6 +1669,7 @@
     let currentUrls = [];
     let selectedPresetId = "en-calm-space-ai";
     let customVoiceRecipes = [];
+    let uploadedAudioFile = null;
 
     function init() {
       customVoiceRecipes = loadCustomVoiceRecipes();
@@ -1599,6 +1696,13 @@
       el.exportCustomPresetsBtn.addEventListener("click", exportCustomPresets);
       el.importCustomPresetsBtn.addEventListener("click", () => el.importCustomPresetsFile.click());
       el.importCustomPresetsFile.addEventListener("change", importCustomPresetsFromFile);
+
+      el.audioUploadInput.addEventListener("change", handleAudioUploadChange);
+      el.processAudioBtn.addEventListener("click", processUploadedAudio);
+      el.clearAudioBtn.addEventListener("click", clearUploadedAudio);
+      el.audioDrop.addEventListener("dragover", handleAudioDragOver);
+      el.audioDrop.addEventListener("dragleave", handleAudioDragLeave);
+      el.audioDrop.addEventListener("drop", handleAudioDrop);
 
       el.generateBtn.addEventListener("click", generate);
       el.demoBtn.addEventListener("click", () => {
@@ -1889,6 +1993,160 @@
     function lockUi(isLocked) {
       el.generateBtn.disabled = isLocked;
       el.generateBtn.textContent = isLocked ? "Bezig..." : "Genereer MP3";
+    }
+
+    function handleAudioUploadChange(event) {
+      const file = event.target.files?.[0];
+      if (file) setUploadedAudioFile(file);
+    }
+
+    function handleAudioDragOver(event) {
+      event.preventDefault();
+      el.audioDrop.classList.add("is-dragover");
+    }
+
+    function handleAudioDragLeave() {
+      el.audioDrop.classList.remove("is-dragover");
+    }
+
+    function handleAudioDrop(event) {
+      event.preventDefault();
+      el.audioDrop.classList.remove("is-dragover");
+      const file = event.dataTransfer?.files?.[0];
+      if (file) {
+        el.audioUploadInput.value = "";
+        setUploadedAudioFile(file);
+      }
+    }
+
+    function setUploadedAudioFile(file) {
+      uploadedAudioFile = file;
+      el.audioUploadTitle.textContent = file.name;
+      el.audioUploadMeta.textContent = `${formatBytes(file.size)} · ready for robot FX`;
+      el.processAudioBtn.disabled = false;
+      el.clearAudioBtn.disabled = false;
+      setStatus("<strong>Audio loaded.</strong> Choose a voice preset and click Robotize audio.");
+    }
+
+    function clearUploadedAudio() {
+      uploadedAudioFile = null;
+      el.audioUploadInput.value = "";
+      el.audioUploadTitle.textContent = "Drop or choose audio";
+      el.audioUploadMeta.textContent = "Use the selected voice preset as robot FX chain";
+      el.processAudioBtn.disabled = true;
+      el.clearAudioBtn.disabled = true;
+      setStatus("<strong>Cleared.</strong> Audio upload removed.");
+    }
+
+    async function processUploadedAudio() {
+      if (!uploadedAudioFile) {
+        setStatus("<strong>No audio.</strong> Choose an audio file first.", true);
+        return;
+      }
+
+      const preset = getPreset();
+      const kbps = clampInt(el.kbps.value, 64, 192);
+
+      try {
+        lockAudioUi(true);
+        revokeUrls();
+        setStatus("<strong>Step 1 of 3.</strong> Decoding uploaded audio.");
+
+        const decoded = await decodeUploadedAudioFile(uploadedAudioFile);
+        const mono = mixAudioBufferToMono(decoded);
+
+        setStatus("<strong>Step 2 of 3.</strong> Applying robot FX chain.");
+
+        const processed = applyRobotFx(mono, decoded.sampleRate, preset.fx);
+        const int16 = floatToInt16(processed);
+
+        setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
+
+        const wavBlob = encodeWavMono(int16, decoded.sampleRate);
+        const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
+
+        const mp3Url = URL.createObjectURL(mp3Blob);
+        const wavUrl = URL.createObjectURL(wavBlob);
+        currentUrls.push(mp3Url, wavUrl);
+
+        el.audioPlayer.src = mp3Url;
+        el.downloadMp3.href = mp3Url;
+        el.downloadWav.href = wavUrl;
+        el.downloadMp3.download = makeAudioRobotizerFileName("mp3");
+        el.downloadWav.download = makeAudioRobotizerFileName("wav");
+        el.downloadMp3.classList.remove("disabled");
+        el.downloadWav.classList.remove("disabled");
+
+        const seconds = (int16.length / decoded.sampleRate).toFixed(1);
+        setStatus(`<strong>Ready.</strong> Robotized audio: ${seconds} sec · MP3 ${kbps} kbps.`);
+      } catch (error) {
+        console.error(error);
+        setStatus(`<strong>Audio failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+      } finally {
+        lockAudioUi(false);
+      }
+    }
+
+    async function decodeUploadedAudioFile(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        throw new Error("This browser does not support Web Audio decoding.");
+      }
+
+      const context = new AudioContextClass();
+      try {
+        const audioBuffer = await context.decodeAudioData(arrayBuffer.slice(0));
+        return audioBuffer;
+      } finally {
+        if (context.close) {
+          context.close().catch(() => {});
+        }
+      }
+    }
+
+    function mixAudioBufferToMono(audioBuffer) {
+      const length = audioBuffer.length;
+      const channels = audioBuffer.numberOfChannels;
+      const mono = new Float32Array(length);
+
+      for (let ch = 0; ch < channels; ch++) {
+        const data = audioBuffer.getChannelData(ch);
+        for (let i = 0; i < length; i++) {
+          mono[i] += data[i] / channels;
+        }
+      }
+
+      return mono;
+    }
+
+    function lockAudioUi(isLocked) {
+      el.processAudioBtn.disabled = isLocked || !uploadedAudioFile;
+      el.clearAudioBtn.disabled = isLocked || !uploadedAudioFile;
+      el.processAudioBtn.textContent = isLocked ? "Processing..." : "Robotize audio";
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes)) return "";
+      const units = ["B", "KB", "MB", "GB"];
+      let value = bytes;
+      let unit = 0;
+
+      while (value >= 1024 && unit < units.length - 1) {
+        value /= 1024;
+        unit++;
+      }
+
+      return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+    }
+
+    function makeAudioRobotizerFileName(extension) {
+      const preset = getPreset().id;
+      const base = uploadedAudioFile?.name
+        ? uploadedAudioFile.name.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase()
+        : "audio";
+      const stamp = new Date().toISOString().slice(0, 10);
+      return `${base}_${preset}_robotized_${stamp}.${extension}`;
     }
 
     async function generate() {
