@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.2 Safe Recovery</title>
+  <title>Robo Phonix v21.3 Safe Mic Upload Recovery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -1478,7 +1478,7 @@
 
       <div class="hero-topline">
         <span class="hero-mark">↗</span>
-        <span class="hero-mini">Voice Lab | v21.2 Safe Auto Mic Recovery</span>
+        <span class="hero-mini">Voice Lab | v21.3 Safe Mic Upload Recovery</span>
       </div>
 
       <div class="badge">◉ Futuristic Voice Lab</div>
@@ -1526,6 +1526,18 @@
               <span>Audio Robotizer</span>
               <small>MP3 / WAV</small>
             </div>
+
+            <label class="audio-drop" for="audioUploadInput">
+              <strong id="audioUploadTitle">Drop or choose audio</strong>
+              <small id="audioUploadMeta">Use the selected voice preset as robot FX chain</small>
+              <input id="audioUploadInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden>
+            </label>
+
+            <div class="audio-upload-actions">
+              <button id="processAudioBtn" class="secondary micro-button" type="button" disabled>Robotize audio</button>
+              <button id="clearAudioBtn" class="secondary micro-button" type="button" disabled>Clear audio</button>
+            </div>
+          </div>
 
           <div class="mic-record-lab">
             <div class="mic-record-head">
@@ -1581,17 +1593,6 @@
             </div>
           </div>
 
-            <label class="audio-drop" for="audioUploadInput">
-              <strong id="audioUploadTitle">Drop or choose audio</strong>
-              <small id="audioUploadMeta">Use the selected voice preset as robot FX chain</small>
-              <input id="audioUploadInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden>
-            </label>
-
-            <div class="audio-upload-actions">
-              <button id="processAudioBtn" class="secondary micro-button" type="button" disabled>Robotize audio</button>
-              <button id="clearAudioBtn" class="secondary micro-button" type="button" disabled>Clear audio</button>
-            </div>
-          </div>
           <div class="voice-control">
             <div class="voice-label">Voice</div>
             <button id="openVoiceDrawer" class="voice-selected" type="button">
@@ -5194,29 +5195,14 @@
     }
 
     function applyExternalPresetShaping(input, sampleRate, preset) {
-      const baseSpeed = 140;
-      const basePitch = 35;
       const baseAmp = 130;
-
-      const speed = clampInt(preset.speed ?? baseSpeed, 80, 260);
-      const pitch = clampInt(preset.pitch ?? basePitch, 0, 99);
       const amp = clampInt(preset.amp ?? baseAmp, 20, 200);
-
-      const speedRatio = clamp(speed / baseSpeed, .55, 1.9);
-      const pitchShape = clamp((pitch - basePitch) / 64, -1, 1);
       const gain = clamp(amp / baseAmp, .15, 2.2);
 
-      let output = input;
-
-      if (Math.abs(speedRatio - 1) > .015) {
-        output = resampleByRatio(output, speedRatio);
-      }
-
-      if (Math.abs(pitchShape) > .02) {
-        output = formantShape(output, sampleRate, pitchShape * .85);
-      }
-
-      output = applyGain(output, gain);
+      // External sources are already real voices. Do not reuse the TTS speed and pitch
+      // values here, because that stretches recorded/uploaded audio and makes mic takes
+      // sound unexpectedly lower or darker than the selected Robot FX preset.
+      const output = applyGain(input, gain);
 
       return { samples: output, sampleRate };
     }
