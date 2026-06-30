@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v20</title>
+  <title>Robo Phonix v21.1</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -1478,7 +1478,7 @@
 
       <div class="hero-topline">
         <span class="hero-mark">↗</span>
-        <span class="hero-mini">Voice Lab | v21 Auto Mic Render Lab</span>
+        <span class="hero-mini">Voice Lab | v21.1 Auto Mic Timing Fix</span>
       </div>
 
       <div class="badge">◉ Futuristic Voice Lab</div>
@@ -1554,7 +1554,7 @@
 
             <div id="autoMicDisplay" class="auto-mic-display">
               <strong id="autoMicTitle">Auto mic is off</strong>
-              <small id="autoMicMeta">Start Auto Mic, speak, pause, then Robo Phonix renders and plays the result automatically.</small>
+              <small id="autoMicMeta">Start Auto Mic, speak, pause, then Robo Phonix trims, renders and plays automatically.</small>
               <div class="auto-mic-meter" aria-hidden="true"><div id="autoMicMeterBar" class="auto-mic-meter-bar"></div></div>
             </div>
 
@@ -1567,8 +1567,8 @@
 
             <div class="auto-mic-settings">
               <label>
-                Silence delay <span id="autoMicDelayReadout">1.2s</span>
-                <input id="autoMicDelay" type="range" min="600" max="2500" step="100" value="1200">
+                Silence delay <span id="autoMicDelayReadout">0.8s</span>
+                <input id="autoMicDelay" type="range" min="400" max="1800" step="100" value="800">
               </label>
               <label>
                 Sensitivity <span id="autoMicSensitivityReadout">55</span>
@@ -2666,6 +2666,13 @@
     let autoMicVoiceFrames = 0;
     let autoMicTakeCount = 0;
     let autoMicLevelBuffer = null;
+    let autoMicProcessor = null;
+    let autoMicSilentGain = null;
+    let autoMicPreRollChunks = [];
+    let autoMicPreRollSampleCount = 0;
+    let autoMicPcmChunks = [];
+    let autoMicPcmSampleCount = 0;
+    let autoMicSampleRate = 0;
     let autoMicLiveNodes = null;
     let visualizerState = {
       samples: null,
@@ -3829,10 +3836,99 @@
       }
     }
 
+    function trimAutoMicSamples(samples, sampleRate) {
+      if (!samples || !samples.length || !sampleRate) return null;
+
+      const windowSize = Math.max(96, Math.floor(sampleRate * .012));
+      const windows = [];
+      let maxRms = 0;
+
+      for (let start = 0; start < samples.length; start += windowSize) {
+        const end = Math.min(samples.length, start + windowSize);
+        let sum = 0;
+        for (let i = start; i < end; i++) {
+          const value = samples[i];
+          sum += value * value;
+        }
+        const rms = Math.sqrt(sum / Math.max(1, end - start));
+        windows.push({ start, end, rms });
+        if (rms > maxRms) maxRms = rms;
+      }
+
+      if (!windows.length || maxRms < .006) return null;
+
+      const sorted = windows.map((item) => item.rms).sort((a, b) => a - b);
+      const noiseFloor = sorted[Math.floor(sorted.length * .24)] || 0;
+      const speechThreshold = clamp(Math.max(.010, noiseFloor * 2.7, maxRms * .13), .010, .085);
+      const softThreshold = speechThreshold * .58;
+
+      let firstVoiceWindow = -1;
+      let lastVoiceWindow = -1;
+      let run = 0;
+
+      for (let i = 0; i < windows.length; i++) {
+        if (windows[i].rms >= speechThreshold) {
+          run += 1;
+          if (run >= 2) {
+            firstVoiceWindow = Math.max(0, i - run + 1);
+            break;
+          }
+        } else if (windows[i].rms >= softThreshold && run > 0) {
+          run += 1;
+        } else {
+          run = 0;
+        }
+      }
+
+      run = 0;
+      for (let i = windows.length - 1; i >= 0; i--) {
+        if (windows[i].rms >= speechThreshold) {
+          run += 1;
+          if (run >= 2) {
+            lastVoiceWindow = Math.min(windows.length - 1, i + run - 1);
+            break;
+          }
+        } else if (windows[i].rms >= softThreshold && run > 0) {
+          run += 1;
+        } else {
+          run = 0;
+        }
+      }
+
+      if (firstVoiceWindow < 0 || lastVoiceWindow < firstVoiceWindow) return null;
+
+      while (firstVoiceWindow > 0 && windows[firstVoiceWindow - 1].rms >= softThreshold) {
+        firstVoiceWindow -= 1;
+      }
+      while (lastVoiceWindow < windows.length - 1 && windows[lastVoiceWindow + 1].rms >= softThreshold) {
+        lastVoiceWindow += 1;
+      }
+
+      const headPad = Math.floor(sampleRate * .32);
+      const tailPad = Math.floor(sampleRate * .22);
+      const trimStart = Math.max(0, windows[firstVoiceWindow].start - headPad);
+      const trimEnd = Math.min(samples.length, windows[lastVoiceWindow].end + tailPad);
+      const minSpeechSamples = Math.floor(sampleRate * .28);
+
+      if (trimEnd - trimStart < minSpeechSamples) return null;
+
+      const output = samples.slice(trimStart, trimEnd);
+      const removedBefore = trimStart / sampleRate;
+      const removedAfter = Math.max(0, (samples.length - trimEnd) / sampleRate);
+      const duration = output.length / sampleRate;
+
+      return {
+        samples: output,
+        meta: `${duration.toFixed(1)} sec kept · ${removedBefore.toFixed(1)} sec lead trim · ${removedAfter.toFixed(1)} sec tail trim`
+      };
+    }
+
     async function processRecordedAudio(options = {}) {
       const autoPlay = Boolean(options.autoPlay);
       const sourceTitle = options.sourceTitle || null;
-      if (!recordedAudioFile) {
+      const directSamples = options.sourceSamples instanceof Float32Array ? options.sourceSamples : null;
+      const directSampleRate = Number(options.sourceSampleRate) || 0;
+      if (!recordedAudioFile && !directSamples) {
         setStatus("<strong>No recording.</strong> Record audio first.", true);
         return;
       }
@@ -3846,26 +3942,46 @@
         revokeUrls();
         setStatus(`<strong>Step 1 of 3.</strong> Decoding ${sourceTitle ? escapeHtml(sourceTitle) : "microphone recording"}.`);
 
-        const decoded = await decodeUploadedAudioFile(recordedAudioFile);
-        const mono = mixAudioBufferToMono(decoded);
+        let mono;
+        let sampleRate;
+
+        if (directSamples && directSampleRate) {
+          mono = directSamples;
+          sampleRate = directSampleRate;
+        } else {
+          const decoded = await decodeUploadedAudioFile(recordedAudioFile);
+          mono = mixAudioBufferToMono(decoded);
+          sampleRate = sampleRate;
+        }
+
+        if (options.trimAutoMic) {
+          const trimmed = trimAutoMicSamples(mono, sampleRate);
+          if (!trimmed) {
+            setStatus("<strong>Auto Mic skipped.</strong> Too little clear speech was detected. Try speaking a bit louder or raise Sensitivity.");
+            return false;
+          }
+          mono = trimmed.samples;
+          setStatus(`<strong>Step 1 of 3.</strong> Auto Mic smart trim: ${trimmed.meta}.`);
+          await new Promise((resolve) => setTimeout(resolve, 35));
+        }
 
         let processed;
         if (isVocoder) {
           setStatus("<strong>Step 2 of 3.</strong> Applying vocoder carrier engine.");
-          processed = applyVocoderFx(mono, decoded.sampleRate, preset);
+          processed = applyVocoderFx(mono, sampleRate, preset);
         } else {
           setStatus("<strong>Step 2 of 3.</strong> Applying preset voice shaping and robot FX.");
-          const shaped = applyExternalPresetShaping(mono, decoded.sampleRate, preset);
-          processed = applyRobotFx(shaped.samples, decoded.sampleRate, preset.fx);
+          const shaped = applyExternalPresetShaping(mono, sampleRate, preset);
+          processed = applyRobotFx(shaped.samples, sampleRate, preset.fx);
         }
 
         const int16 = floatToInt16(processed);
-        updateVisualizerFromInt16(int16, decoded.sampleRate, sourceTitle ? `${isVocoder ? "Vocoder FX" : "Robot FX"} ${sourceTitle}` : (isVocoder ? "Vocoder FX Mic" : "Robot FX Mic"));
+        updateVisualizerFromInt16(int16, sampleRate, sourceTitle ? `${isVocoder ? "Vocoder FX" : "Robot FX"} ${sourceTitle}` : (isVocoder ? "Vocoder FX Mic" : "Robot FX Mic"));
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
 
-        const wavBlob = encodeWavMono(int16, decoded.sampleRate);
-        const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
+        const wavBlob = encodeWavMono(int16, sampleRate);
+        const mp3Blob = encodeMp3Mono(int16, sampleRate, kbps);
 
         const mp3Url = URL.createObjectURL(mp3Blob);
         const wavUrl = URL.createObjectURL(wavBlob);
@@ -3879,17 +3995,144 @@
         el.downloadMp3.classList.remove("disabled");
         el.downloadWav.classList.remove("disabled");
 
-        const seconds = (int16.length / decoded.sampleRate).toFixed(1);
+        const seconds = (int16.length / sampleRate).toFixed(1);
         setStatus(`<strong>Ready.</strong> ${isVocoder ? "Vocoded" : "Robotized"} recording: ${seconds} sec · MP3 ${kbps} kbps.`);
 
         if (autoPlay) {
           await playAutoMicResult();
         }
+
+        return true;
       } catch (error) {
         console.error(error);
         setStatus(`<strong>Recording failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
       } finally {
         lockRecordingUi(false);
+      }
+    }
+
+    function startAutoMicPcmTap() {
+      if (!autoMicAudioContext || !autoMicSource || autoMicProcessor) return;
+
+      autoMicSampleRate = autoMicAudioContext.sampleRate;
+      autoMicProcessor = autoMicAudioContext.createScriptProcessor(1024, 1, 1);
+      autoMicSilentGain = autoMicAudioContext.createGain();
+      autoMicSilentGain.gain.value = 0;
+
+      autoMicProcessor.onaudioprocess = handleAutoMicAudioProcess;
+      autoMicSource.connect(autoMicProcessor);
+      autoMicProcessor.connect(autoMicSilentGain);
+      autoMicSilentGain.connect(autoMicAudioContext.destination);
+    }
+
+    function stopAutoMicPcmTap() {
+      if (autoMicProcessor) {
+        autoMicProcessor.onaudioprocess = null;
+        try { autoMicProcessor.disconnect(); } catch (_) {}
+        autoMicProcessor = null;
+      }
+
+      if (autoMicSilentGain) {
+        try { autoMicSilentGain.disconnect(); } catch (_) {}
+        autoMicSilentGain = null;
+      }
+    }
+
+    function handleAutoMicAudioProcess(event) {
+      if (!autoMicActive || autoMicRendering || autoMicPausedForPlayback || Date.now() < autoMicPauseUntil) {
+        return;
+      }
+
+      const input = event.inputBuffer.getChannelData(0);
+      const chunk = new Float32Array(input.length);
+      chunk.set(input);
+
+      if (autoMicCapturing) {
+        autoMicPcmChunks.push(chunk);
+        autoMicPcmSampleCount += chunk.length;
+      } else {
+        pushAutoMicPreRollChunk(chunk);
+      }
+    }
+
+    function pushAutoMicPreRollChunk(chunk) {
+      const sampleRate = autoMicSampleRate || autoMicAudioContext?.sampleRate || 44100;
+      const maxPreRollSamples = Math.floor(sampleRate * .72);
+      autoMicPreRollChunks.push(chunk);
+      autoMicPreRollSampleCount += chunk.length;
+
+      while (autoMicPreRollSampleCount > maxPreRollSamples && autoMicPreRollChunks.length > 1) {
+        const removed = autoMicPreRollChunks.shift();
+        autoMicPreRollSampleCount -= removed.length;
+      }
+    }
+
+    function copyAutoMicPreRollChunks() {
+      return autoMicPreRollChunks.map((chunk) => {
+        const copy = new Float32Array(chunk.length);
+        copy.set(chunk);
+        return copy;
+      });
+    }
+
+    function concatFloat32Chunks(chunks, totalSamples) {
+      const output = new Float32Array(Math.max(0, totalSamples));
+      let offset = 0;
+      chunks.forEach((chunk) => {
+        output.set(chunk, offset);
+        offset += chunk.length;
+      });
+      return output;
+    }
+
+    async function finalizeAutoMicPcmTake(chunks, sampleRate) {
+      if (!autoMicActive && !autoMicRendering) return;
+
+      const totalSamples = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      if (!totalSamples || !sampleRate) {
+        autoMicRendering = false;
+        updateAutoMicUi(autoMicActive ? "listening" : "idle");
+        return;
+      }
+
+      const raw = concatFloat32Chunks(chunks, totalSamples);
+      const trimmed = trimAutoMicSamples(raw, sampleRate);
+
+      if (!trimmed) {
+        autoMicRendering = false;
+        autoMicPauseUntil = Date.now() + 500;
+        updateAutoMicUi(autoMicActive ? "listening" : "idle");
+        setStatus("<strong>Auto Mic skipped.</strong> Too little clear speech was detected. Try speaking a bit louder or raise Sensitivity.");
+        return;
+      }
+
+      const trimmedInt16 = floatToInt16(trimmed.samples);
+      const wavBlob = encodeWavMono(trimmedInt16, sampleRate);
+      recordedAudioFile = new File([wavBlob], `robo-phonix-auto-mic-${autoMicTakeCount}.wav`, { type: "audio/wav" });
+      el.recordingTitle.textContent = "Auto mic take ready";
+      el.recordingMeta.textContent = `${trimmed.meta} · auto ${engineMode === "vocoder" ? "vocoder" : "robot"} render`;
+      el.processRecordingBtn.disabled = false;
+      el.clearRecordingBtn.disabled = false;
+
+      try {
+        updateAutoMicUi("rendering");
+        setStatus(`<strong>Step 1 of 3.</strong> Auto Mic smart trim: ${trimmed.meta}.`);
+        await processRecordedAudio({
+          autoPlay: el.autoMicAutoPlay.checked,
+          sourceTitle: "Auto Mic",
+          sourceSamples: trimmed.samples,
+          sourceSampleRate: sampleRate
+        });
+      } finally {
+        autoMicRendering = false;
+
+        if (!el.autoMicAutoPlay.checked) {
+          autoMicPauseUntil = Date.now() + 800;
+          updateAutoMicUi(autoMicActive ? "listening" : "idle");
+        } else if (!autoMicPausedForPlayback) {
+          autoMicPauseUntil = Date.now() + 1200;
+          updateAutoMicUi(autoMicActive ? "listening" : "idle");
+        }
       }
     }
 
@@ -3902,10 +4145,6 @@
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error("Auto Mic needs microphone access, which is not supported in this browser.");
         }
-        if (!window.MediaRecorder) {
-          throw new Error("Auto Mic needs MediaRecorder support in this browser.");
-        }
-
         autoMicStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -3931,6 +4170,11 @@
         autoMicLevelBuffer = new Uint8Array(autoMicAnalyser.fftSize);
         autoMicSource.connect(autoMicAnalyser);
 
+        if (!autoMicAudioContext.createScriptProcessor) {
+          throw new Error("Auto Mic needs browser PCM capture support.");
+        }
+        startAutoMicPcmTap();
+
         autoMicActive = true;
         autoMicCapturing = false;
         autoMicRendering = false;
@@ -3940,12 +4184,17 @@
         autoMicStartedAt = 0;
         autoMicVoiceFrames = 0;
         autoMicTakeCount = 0;
+        autoMicPreRollChunks = [];
+        autoMicPreRollSampleCount = 0;
+        autoMicPcmChunks = [];
+        autoMicPcmSampleCount = 0;
+        autoMicSampleRate = autoMicAudioContext.sampleRate;
 
         el.startAutoMicBtn.disabled = true;
         el.stopAutoMicBtn.disabled = false;
         el.startRecordingBtn.disabled = true;
         updateAutoMicUi("listening");
-        setStatus("<strong>Auto Mic active.</strong> Speak, pause, then Robo Phonix renders and plays the result automatically.");
+        setStatus("<strong>Auto Mic active.</strong> Speak, pause, then Robo Phonix trims, renders and plays automatically.");
 
         if (el.autoMicLiveMonitor.checked) {
           startAutoMicLiveMonitor();
@@ -3971,11 +4220,18 @@
         autoMicMonitorFrameId = null;
       }
 
+      stopAutoMicPcmTap();
+
       if (autoMicRecorder && autoMicRecorder.state !== "inactive") {
         try { autoMicRecorder.stop(); } catch (_) {}
       }
       autoMicRecorder = null;
       autoMicChunks = [];
+      autoMicPreRollChunks = [];
+      autoMicPreRollSampleCount = 0;
+      autoMicPcmChunks = [];
+      autoMicPcmSampleCount = 0;
+      autoMicSampleRate = 0;
 
       stopAutoMicLiveMonitor();
 
@@ -4016,25 +4272,26 @@
       const paused = autoMicRendering || autoMicPausedForPlayback || now < autoMicPauseUntil;
 
       if (!paused) {
+        const startThreshold = getAutoMicStartThreshold();
+        const stopThreshold = getAutoMicStopThreshold();
+
         if (!autoMicCapturing) {
-          if (rms > threshold) {
+          if (rms > startThreshold) {
             autoMicVoiceFrames += 1;
-            if (autoMicVoiceFrames >= 3) {
-              startAutoMicTake();
-            }
+            startAutoMicTake();
           } else {
             autoMicVoiceFrames = Math.max(0, autoMicVoiceFrames - 1);
           }
         } else {
-          if (rms > threshold) {
+          if (rms > stopThreshold) {
             autoMicLastVoiceAt = now;
           }
 
-          const silenceDelay = clampInt(el.autoMicDelay.value, 600, 2500);
+          const silenceDelay = clampInt(el.autoMicDelay.value, 400, 1800);
           const maxTakeMs = clampInt(el.autoMicMaxTake.value, 5, 30) * 1000;
           const recordingAge = now - autoMicStartedAt;
 
-          if (recordingAge > 400 && now - autoMicLastVoiceAt >= silenceDelay) {
+          if (recordingAge > 260 && now - autoMicLastVoiceAt >= silenceDelay) {
             stopAutoMicTake("silence");
           } else if (recordingAge >= maxTakeMs) {
             stopAutoMicTake("max");
@@ -4056,53 +4313,52 @@
 
     function getAutoMicThreshold() {
       const sensitivity = clamp(numberOrDefault(el.autoMicSensitivity.value, 55), 1, 100);
-      return clamp(.095 - sensitivity * .00078, .014, .09);
+      return clamp(.087 - sensitivity * .00072, .012, .085);
+    }
+
+    function getAutoMicStartThreshold() {
+      return clamp(getAutoMicThreshold() * .68, .009, .07);
+    }
+
+    function getAutoMicStopThreshold() {
+      return clamp(getAutoMicThreshold() * .52, .007, .055);
     }
 
     function startAutoMicTake() {
       if (!autoMicActive || autoMicCapturing || autoMicRendering || !autoMicStream) return;
 
-      try {
-        const mimeType = pickSupportedRecordingMimeType();
-        const options = mimeType ? { mimeType } : undefined;
-        autoMicChunks = [];
-        autoMicRecorder = new MediaRecorder(autoMicStream, options);
-        const effectiveMimeType = mimeType || autoMicRecorder.mimeType || "audio/webm";
-
-        autoMicRecorder.addEventListener("dataavailable", (event) => {
-          if (event.data && event.data.size > 0) {
-            autoMicChunks.push(event.data);
-          }
-        });
-
-        autoMicRecorder.addEventListener("stop", () => {
-          finalizeAutoMicTake(effectiveMimeType);
-        }, { once: true });
-
-        autoMicRecorder.start();
-        autoMicCapturing = true;
-        autoMicStartedAt = Date.now();
-        autoMicLastVoiceAt = autoMicStartedAt;
-        autoMicVoiceFrames = 0;
-        autoMicTakeCount += 1;
-        updateAutoMicUi("capturing");
-      } catch (error) {
-        console.error(error);
-        updateAutoMicUi("listening");
-        setStatus(`<strong>Auto Mic capture failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
-      }
+      autoMicPcmChunks = copyAutoMicPreRollChunks();
+      autoMicPcmSampleCount = autoMicPcmChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      autoMicCapturing = true;
+      autoMicStartedAt = Date.now();
+      autoMicLastVoiceAt = autoMicStartedAt;
+      autoMicVoiceFrames = 0;
+      autoMicTakeCount += 1;
+      updateAutoMicUi("capturing");
     }
 
     function stopAutoMicTake(reason = "silence") {
-      if (!autoMicCapturing || !autoMicRecorder) return;
+      if (!autoMicCapturing) return;
+
+      const chunks = autoMicPcmChunks.slice();
+      const sampleRate = autoMicSampleRate || autoMicAudioContext?.sampleRate || 44100;
+
       autoMicCapturing = false;
       autoMicRendering = true;
       autoMicPauseUntil = Date.now() + 900;
+      autoMicPreRollChunks = [];
+      autoMicPreRollSampleCount = 0;
+      autoMicPcmChunks = [];
+      autoMicPcmSampleCount = 0;
       updateAutoMicUi(reason === "max" ? "max" : "rendering");
 
-      if (autoMicRecorder.state !== "inactive") {
-        autoMicRecorder.stop();
-      }
+      finalizeAutoMicPcmTake(chunks, sampleRate).catch((error) => {
+        console.error(error);
+        autoMicRendering = false;
+        autoMicPauseUntil = Date.now() + 1000;
+        updateAutoMicUi(autoMicActive ? "listening" : "idle");
+        setStatus(`<strong>Auto Mic render failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+      });
     }
 
     async function finalizeAutoMicTake(mimeType) {
@@ -4135,7 +4391,8 @@
         updateAutoMicUi("rendering");
         await processRecordedAudio({
           autoPlay: el.autoMicAutoPlay.checked,
-          sourceTitle: "Auto Mic"
+          sourceTitle: "Auto Mic",
+          trimAutoMic: true
         });
       } finally {
         autoMicRendering = false;
@@ -4191,11 +4448,11 @@
       if (state === "idle") {
         el.autoMicState.textContent = "Idle";
         el.autoMicTitle.textContent = "Auto mic is off";
-        el.autoMicMeta.textContent = "Start Auto Mic, speak, pause, then Robo Phonix renders and plays the result automatically.";
+        el.autoMicMeta.textContent = "Start Auto Mic, speak, pause, then Robo Phonix trims, renders and plays automatically.";
       } else if (state === "listening") {
         el.autoMicState.textContent = "Listening";
         el.autoMicTitle.textContent = "Listening for speech";
-        el.autoMicMeta.textContent = `${engineLabel} armed. Speak clearly, then pause.`;
+        el.autoMicMeta.textContent = `${engineLabel} armed. Smart pre-trigger and tail trim are active.`;
       } else if (state === "capturing") {
         el.autoMicState.textContent = "Speech";
         el.autoMicTitle.textContent = "Speech detected";
@@ -4216,7 +4473,7 @@
     }
 
     function updateAutoMicReadouts() {
-      el.autoMicDelayReadout.textContent = `${(clampInt(el.autoMicDelay.value, 600, 2500) / 1000).toFixed(1)}s`;
+      el.autoMicDelayReadout.textContent = `${(clampInt(el.autoMicDelay.value, 400, 1800) / 1000).toFixed(1)}s`;
       el.autoMicSensitivityReadout.textContent = String(clampInt(el.autoMicSensitivity.value, 1, 100));
       el.autoMicMaxTakeReadout.textContent = `${clampInt(el.autoMicMaxTake.value, 5, 30)}s`;
     }
