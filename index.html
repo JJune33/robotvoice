@@ -1256,6 +1256,7 @@
       line-height: 1.35;
     }
 
+    body.engine-vocoder .tts-text-lab,
     body.engine-vocoder .voice-control,
     body.engine-vocoder .preset-lab {
       display: none;
@@ -1501,10 +1502,10 @@
           <h2>Tekst en stem</h2>
         </div>
         <div class="card-body">
-          <label>
-            Tekst
+          <label class="tts-text-lab">
+            Tekst voor Robot FX TTS
             <textarea id="textInput">Robo Phonix online. Voice engine stable. Robot synthesis ready for deployment.</textarea>
-            <span class="hint">Kortere teksten genereren sneller. Voor lange scripts kun je per alinea exporteren.</span>
+            <span class="hint">Alleen zichtbaar in Robot FX. Vocoder FX gebruikt upload, mic recorder of Auto Mic als audio input.</span>
           </label>
 
           <div class="engine-mode-lab">
@@ -3088,8 +3089,8 @@
       el.vocoderModeBtn.setAttribute("aria-pressed", engineMode === "vocoder" ? "true" : "false");
       el.engineModeBadge.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
       el.engineModeMeta.textContent = engineMode === "vocoder"
-        ? "Vocoder FX uses its own rack, live controls, upload and microphone."
-        : "Robot FX uses Voice Rack, text, upload and microphone.";
+        ? "Vocoder FX uses Vocoder Rack plus upload, mic recorder or Auto Mic. Text TTS is disabled in this mode."
+        : "Robot FX uses Voice Rack, text TTS, upload, mic recorder and Auto Mic.";
 
       updateProcessButtonLabels();
       refreshAudioAndRecordingHints();
