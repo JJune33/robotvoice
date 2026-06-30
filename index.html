@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.1</title>
+  <title>Robo Phonix v21.2 Safe Recovery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -1478,7 +1478,7 @@
 
       <div class="hero-topline">
         <span class="hero-mark">↗</span>
-        <span class="hero-mini">Voice Lab | v21.1 Auto Mic Timing Fix</span>
+        <span class="hero-mini">Voice Lab | v21.2 Safe Auto Mic Recovery</span>
       </div>
 
       <div class="badge">◉ Futuristic Voice Lab</div>
@@ -3727,9 +3727,6 @@
 
     async function startMicRecording() {
       try {
-        if (autoMicActive) {
-          throw new Error("Stop Auto Mic before using the manual recorder.");
-        }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error("Microphone recording is not supported in this browser.");
         }
@@ -3923,12 +3920,8 @@
       };
     }
 
-    async function processRecordedAudio(options = {}) {
-      const autoPlay = Boolean(options.autoPlay);
-      const sourceTitle = options.sourceTitle || null;
-      const directSamples = options.sourceSamples instanceof Float32Array ? options.sourceSamples : null;
-      const directSampleRate = Number(options.sourceSampleRate) || 0;
-      if (!recordedAudioFile && !directSamples) {
+    async function processRecordedAudio() {
+      if (!recordedAudioFile) {
         setStatus("<strong>No recording.</strong> Record audio first.", true);
         return;
       }
@@ -3940,30 +3933,66 @@
       try {
         lockRecordingUi(true);
         revokeUrls();
-        setStatus(`<strong>Step 1 of 3.</strong> Decoding ${sourceTitle ? escapeHtml(sourceTitle) : "microphone recording"}.`);
+        setStatus("<strong>Step 1 of 3.</strong> Decoding microphone recording.");
 
-        let mono;
-        let sampleRate;
+        const decoded = await decodeUploadedAudioFile(recordedAudioFile);
+        const mono = mixAudioBufferToMono(decoded);
 
-        if (directSamples && directSampleRate) {
-          mono = directSamples;
-          sampleRate = directSampleRate;
+        let processed;
+        if (isVocoder) {
+          setStatus("<strong>Step 2 of 3.</strong> Applying vocoder carrier engine.");
+          processed = applyVocoderFx(mono, decoded.sampleRate, preset);
         } else {
-          const decoded = await decodeUploadedAudioFile(recordedAudioFile);
-          mono = mixAudioBufferToMono(decoded);
-          sampleRate = sampleRate;
+          setStatus("<strong>Step 2 of 3.</strong> Applying preset voice shaping and robot FX.");
+          const shaped = applyExternalPresetShaping(mono, decoded.sampleRate, preset);
+          processed = applyRobotFx(shaped.samples, decoded.sampleRate, preset.fx);
         }
 
-        if (options.trimAutoMic) {
-          const trimmed = trimAutoMicSamples(mono, sampleRate);
-          if (!trimmed) {
-            setStatus("<strong>Auto Mic skipped.</strong> Too little clear speech was detected. Try speaking a bit louder or raise Sensitivity.");
-            return false;
-          }
-          mono = trimmed.samples;
-          setStatus(`<strong>Step 1 of 3.</strong> Auto Mic smart trim: ${trimmed.meta}.`);
-          await new Promise((resolve) => setTimeout(resolve, 35));
-        }
+        const int16 = floatToInt16(processed);
+        updateVisualizerFromInt16(int16, decoded.sampleRate, isVocoder ? "Vocoder FX Mic" : "Robot FX Mic");
+
+        setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
+
+        const wavBlob = encodeWavMono(int16, decoded.sampleRate);
+        const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
+
+        const mp3Url = URL.createObjectURL(mp3Blob);
+        const wavUrl = URL.createObjectURL(wavBlob);
+        currentUrls.push(mp3Url, wavUrl);
+
+        el.audioPlayer.src = mp3Url;
+        el.downloadMp3.href = mp3Url;
+        el.downloadWav.href = wavUrl;
+        el.downloadMp3.download = makeRecordingRobotizerFileName("mp3");
+        el.downloadWav.download = makeRecordingRobotizerFileName("wav");
+        el.downloadMp3.classList.remove("disabled");
+        el.downloadWav.classList.remove("disabled");
+
+        const seconds = (int16.length / decoded.sampleRate).toFixed(1);
+        setStatus(`<strong>Ready.</strong> ${isVocoder ? "Vocoded" : "Robotized"} recording: ${seconds} sec · MP3 ${kbps} kbps.`);
+      } catch (error) {
+        console.error(error);
+        setStatus(`<strong>Recording failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+      } finally {
+        lockRecordingUi(false);
+      }
+    }
+
+
+    async function processAutoMicSamples(mono, sampleRate, autoPlay = true) {
+      if (!(mono instanceof Float32Array) || !mono.length || !sampleRate) {
+        setStatus("<strong>Auto Mic skipped.</strong> No usable audio was captured.", true);
+        return false;
+      }
+
+      const isVocoder = engineMode === "vocoder";
+      const preset = isVocoder ? getVocoderPreset() : getPreset();
+      const kbps = clampInt(el.kbps.value, 64, 192);
+
+      try {
+        lockRecordingUi(true);
+        revokeUrls();
+        setStatus("<strong>Step 1 of 3.</strong> Preparing Auto Mic take.");
 
         let processed;
         if (isVocoder) {
@@ -3976,7 +4005,7 @@
         }
 
         const int16 = floatToInt16(processed);
-        updateVisualizerFromInt16(int16, sampleRate, sourceTitle ? `${isVocoder ? "Vocoder FX" : "Robot FX"} ${sourceTitle}` : (isVocoder ? "Vocoder FX Mic" : "Robot FX Mic"));
+        updateVisualizerFromInt16(int16, sampleRate, isVocoder ? "Vocoder FX Auto Mic" : "Robot FX Auto Mic");
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
 
@@ -3996,7 +4025,7 @@
         el.downloadWav.classList.remove("disabled");
 
         const seconds = (int16.length / sampleRate).toFixed(1);
-        setStatus(`<strong>Ready.</strong> ${isVocoder ? "Vocoded" : "Robotized"} recording: ${seconds} sec · MP3 ${kbps} kbps.`);
+        setStatus(`<strong>Ready.</strong> Auto Mic ${isVocoder ? "vocoded" : "robotized"}: ${seconds} sec · MP3 ${kbps} kbps.`);
 
         if (autoPlay) {
           await playAutoMicResult();
@@ -4005,11 +4034,13 @@
         return true;
       } catch (error) {
         console.error(error);
-        setStatus(`<strong>Recording failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+        setStatus(`<strong>Auto Mic render failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
+        return false;
       } finally {
         lockRecordingUi(false);
       }
     }
+
 
     function startAutoMicPcmTap() {
       if (!autoMicAudioContext || !autoMicSource || autoMicProcessor) return;
@@ -4117,12 +4148,7 @@
       try {
         updateAutoMicUi("rendering");
         setStatus(`<strong>Step 1 of 3.</strong> Auto Mic smart trim: ${trimmed.meta}.`);
-        await processRecordedAudio({
-          autoPlay: el.autoMicAutoPlay.checked,
-          sourceTitle: "Auto Mic",
-          sourceSamples: trimmed.samples,
-          sourceSampleRate: sampleRate
-        });
+        await processAutoMicSamples(trimmed.samples, sampleRate, el.autoMicAutoPlay.checked);
       } finally {
         autoMicRendering = false;
 
@@ -4389,11 +4415,15 @@
 
       try {
         updateAutoMicUi("rendering");
-        await processRecordedAudio({
-          autoPlay: el.autoMicAutoPlay.checked,
-          sourceTitle: "Auto Mic",
-          trimAutoMic: true
-        });
+        const decoded = await decodeUploadedAudioFile(recordedAudioFile);
+        const mono = mixAudioBufferToMono(decoded);
+        const trimmed = trimAutoMicSamples(mono, decoded.sampleRate);
+        if (!trimmed) {
+          setStatus("<strong>Auto Mic skipped.</strong> Too little clear speech was detected. Try speaking a bit louder or raise Sensitivity.");
+          return;
+        }
+        setStatus(`<strong>Step 1 of 3.</strong> Auto Mic smart trim: ${trimmed.meta}.`);
+        await processAutoMicSamples(trimmed.samples, decoded.sampleRate, el.autoMicAutoPlay.checked);
       } finally {
         autoMicRendering = false;
 
