@@ -2812,6 +2812,9 @@
     let micCoreLastPitch = "--";
     let micCorePitchFrame = 0;
     let micCoreLastDrawAt = 0;
+    let micCoreHideTimer = null;
+    let manualMicCoreActive = false;
+    let autoMicCoreActive = false;
     let autoMicStream = null;
     let autoMicAudioContext = null;
     let autoMicSource = null;
@@ -3902,8 +3905,9 @@
         manualMicAnalyser.smoothingTimeConstant = .5;
         manualMicBuffer = new Uint8Array(manualMicAnalyser.fftSize);
         manualMicSource.connect(manualMicAnalyser);
+        manualMicCoreActive = true;
         micCoreStartedAt = Date.now();
-        showMicCore("REC");
+        showMicCore("REC", "manual");
         loopManualMicCore();
       } catch (error) {
         console.warn("Mic Core unavailable", error);
@@ -3916,13 +3920,14 @@
       if (!micCoreLastDrawAt || timestamp - micCoreLastDrawAt >= 50) {
         micCoreLastDrawAt = timestamp;
         manualMicAnalyser.getByteTimeDomainData(manualMicBuffer);
-        updateMicCoreFromByteBuffer(manualMicBuffer, manualMicAudioContext?.sampleRate || 44100, "REC", micCoreStartedAt);
+        updateMicCoreFromByteBuffer(manualMicBuffer, manualMicAudioContext?.sampleRate || 44100, "REC", micCoreStartedAt, "manual");
       }
       micCoreFrameId = requestAnimationFrame(loopManualMicCore);
     }
 
     function stopManualMicCore(hide = true) {
       manualMicCoreToken += 1;
+      manualMicCoreActive = false;
       if (micCoreFrameId) {
         cancelAnimationFrame(micCoreFrameId);
         micCoreFrameId = null;
@@ -3945,34 +3950,72 @@
       micCorePitchFrame = 0;
       micCoreLastDrawAt = 0;
 
-      if (hide && !autoMicActive && !autoMicRendering && !autoMicPausedForPlayback) {
-        hideMicCore();
+      if (hide && !autoMicCoreShouldStayVisible()) {
+        forceHideMicCore();
       }
     }
 
-    function showMicCore(state = "LIVE") {
-      if (!el.micCoreHud || !el.micCoreCanvas) return;
+    function manualMicCoreShouldStayVisible() {
+      return manualMicCoreActive && mediaRecorder && mediaRecorder.state === "recording";
+    }
+
+    function autoMicCoreShouldStayVisible() {
+      return autoMicCoreActive || autoMicActive || autoMicRendering || autoMicPausedForPlayback;
+    }
+
+    function shouldShowMicCore(source = "any") {
+      if (source === "manual") return manualMicCoreShouldStayVisible();
+      if (source === "auto") return autoMicCoreShouldStayVisible();
+      return manualMicCoreShouldStayVisible() || autoMicCoreShouldStayVisible();
+    }
+
+    function showMicCore(state = "LIVE", source = "any") {
+      if (!el.micCoreHud || !el.micCoreCanvas || !shouldShowMicCore(source)) return false;
+      if (micCoreHideTimer) {
+        clearTimeout(micCoreHideTimer);
+        micCoreHideTimer = null;
+      }
+      const wasHidden = el.micCoreHud.hidden;
       el.micCoreHud.hidden = false;
       el.micCoreMode.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
       el.micCoreState.textContent = formatMicCoreState(state);
-      if (el.micCoreLevel) el.micCoreLevel.textContent = "0%";
-      if (el.micCorePitch) el.micCorePitch.textContent = "--";
-      requestAnimationFrame(() => el.micCoreHud.classList.add("is-active"));
+      if (wasHidden && el.micCoreLevel) el.micCoreLevel.textContent = "0%";
+      if (wasHidden && el.micCorePitch) el.micCorePitch.textContent = "--";
+      requestAnimationFrame(() => {
+        if (shouldShowMicCore(source)) {
+          el.micCoreHud.classList.add("is-active");
+        }
+      });
+      return true;
     }
 
     function hideMicCore() {
       if (!el.micCoreHud) return;
+      if (shouldShowMicCore()) return;
       el.micCoreHud.classList.remove("is-active");
-      setTimeout(() => {
-        if (!el.micCoreHud.classList.contains("is-active")) {
+      if (micCoreHideTimer) clearTimeout(micCoreHideTimer);
+      micCoreHideTimer = setTimeout(() => {
+        if (!shouldShowMicCore() && !el.micCoreHud.classList.contains("is-active")) {
           el.micCoreHud.hidden = true;
         }
       }, 190);
     }
 
-    function updateMicCoreFromByteBuffer(buffer, sampleRate, state, startedAt = 0) {
-      if (!buffer || !buffer.length || !el.micCoreCanvas) return;
-      showMicCore(state);
+    function forceHideMicCore() {
+      if (!el.micCoreHud) return;
+      if (micCoreHideTimer) {
+        clearTimeout(micCoreHideTimer);
+        micCoreHideTimer = null;
+      }
+      el.micCoreHud.classList.remove("is-active");
+      el.micCoreHud.hidden = true;
+      if (el.micCoreLevel) el.micCoreLevel.textContent = "0%";
+      if (el.micCorePitch) el.micCorePitch.textContent = "--";
+    }
+
+    function updateMicCoreFromByteBuffer(buffer, sampleRate, state, startedAt = 0, source = "any") {
+      if (!buffer || !buffer.length || !el.micCoreCanvas || !shouldShowMicCore(source)) return;
+      if (!showMicCore(state, source)) return;
 
       let sum = 0;
       for (let i = 0; i < buffer.length; i += 2) {
@@ -3993,8 +4036,8 @@
       drawMicCoreCanvas(buffer, level, state);
     }
 
-    function updateMicCoreStatic(state, startedAt = 0, level = 0) {
-      showMicCore(state);
+    function updateMicCoreStatic(state, startedAt = 0, level = 0, source = "auto") {
+      if (!showMicCore(state, source)) return;
       if (el.micCoreLevel) el.micCoreLevel.textContent = level > 0 ? `${Math.round(level)}%` : "--";
       if (el.micCorePitch) el.micCorePitch.textContent = "--";
       drawMicCoreCanvas(null, level, state);
@@ -4226,7 +4269,7 @@
         el.processRecordingBtn.disabled = true;
         el.clearRecordingBtn.disabled = true;
         el.micRecordDisplay.classList.remove("is-recording");
-        if (!autoMicActive && !autoMicRendering && !autoMicPausedForPlayback) hideMicCore();
+        if (!autoMicCoreShouldStayVisible()) forceHideMicCore();
         return;
       }
 
@@ -4241,7 +4284,7 @@
       el.processRecordingBtn.disabled = false;
       el.clearRecordingBtn.disabled = false;
       el.micRecordDisplay.classList.remove("is-recording");
-      if (!autoMicActive && !autoMicRendering && !autoMicPausedForPlayback) hideMicCore();
+      if (!autoMicCoreShouldStayVisible()) forceHideMicCore();
 
       setStatus(engineMode === "vocoder"
         ? "<strong>Recording ready.</strong> Choose or tweak a vocoder preset and click Vocode."
@@ -4269,6 +4312,8 @@
       el.processRecordingBtn.disabled = true;
       el.clearRecordingBtn.disabled = true;
       el.micRecordDisplay.classList.remove("is-recording");
+
+      if (!autoMicCoreShouldStayVisible()) forceHideMicCore();
 
       if (showStatus) {
         setStatus("<strong>Cleared.</strong> Microphone recording removed.");
@@ -4698,6 +4743,7 @@
         startAutoMicPcmTap();
 
         autoMicActive = true;
+        autoMicCoreActive = true;
         autoMicCapturing = false;
         autoMicRendering = false;
         autoMicPausedForPlayback = false;
@@ -4731,6 +4777,7 @@
 
     function stopAutoMic(showStatus = true) {
       autoMicActive = false;
+      autoMicCoreActive = false;
       autoMicCapturing = false;
       autoMicRendering = false;
       autoMicPausedForPlayback = false;
@@ -4775,7 +4822,7 @@
       el.startRecordingBtn.disabled = false;
       el.autoMicMeterBar.style.width = "0%";
       updateAutoMicUi("idle");
-      hideMicCore();
+      if (!manualMicCoreShouldStayVisible()) forceHideMicCore();
 
       if (showStatus) {
         setStatus("<strong>Auto Mic stopped.</strong> Manual controls are available again.");
@@ -4793,7 +4840,7 @@
       el.autoMicMeterBar.style.width = `${levelPercent.toFixed(0)}%`;
       if (!micCoreLastDrawAt || now - micCoreLastDrawAt >= 50) {
         micCoreLastDrawAt = now;
-        updateMicCoreFromByteBuffer(autoMicLevelBuffer, autoMicAudioContext?.sampleRate || 44100, autoMicCapturing ? "REC" : "LIVE", autoMicCapturing ? autoMicStartedAt : 0);
+        updateMicCoreFromByteBuffer(autoMicLevelBuffer, autoMicAudioContext?.sampleRate || 44100, autoMicCapturing ? "REC" : "LIVE", autoMicCapturing ? autoMicStartedAt : 0, "auto");
       }
 
       const paused = autoMicRendering || autoMicPausedForPlayback || now < autoMicPauseUntil;
@@ -4966,6 +5013,9 @@
       if (autoMicActive && !autoMicRendering) {
         updateAutoMicUi("listening");
         setStatus("<strong>Auto Mic listening.</strong> Speak again for the next automatic render.");
+      } else {
+        autoMicCoreActive = false;
+        if (!manualMicCoreShouldStayVisible()) forceHideMicCore();
       }
     }
 
@@ -5003,15 +5053,20 @@
       }
 
       if (state === "idle") {
-        if (!manualMicAnalyser) hideMicCore();
+        autoMicCoreActive = false;
+        if (!manualMicCoreShouldStayVisible()) forceHideMicCore();
       } else if (state === "rendering" || state === "max") {
-        updateMicCoreStatic("RENDER", autoMicStartedAt, 0);
+        autoMicCoreActive = true;
+        updateMicCoreStatic("RENDER", autoMicStartedAt, 0, "auto");
       } else if (state === "playing") {
-        updateMicCoreStatic("PLAY", 0, 18);
+        autoMicCoreActive = true;
+        updateMicCoreStatic("PLAY", 0, 18, "auto");
       } else if (state === "capturing") {
-        showMicCore("REC");
+        autoMicCoreActive = true;
+        showMicCore("REC", "auto");
       } else if (state === "listening") {
-        showMicCore("LIVE");
+        autoMicCoreActive = true;
+        showMicCore("LIVE", "auto");
       }
     }
 
