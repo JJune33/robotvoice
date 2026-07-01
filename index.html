@@ -1289,6 +1289,55 @@
       color: #050505;
     }
 
+    .playback-volume-lab {
+      display: grid;
+      gap: 8px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.52);
+      border: 1px solid rgba(10,10,10,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
+    }
+
+    .playback-volume-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      color: #0a0a0a;
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .playback-volume-head small {
+      color: #050505;
+      background: linear-gradient(180deg, #d6ff68 0%, #c1ff1a 100%);
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-family: Inter, sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .playback-volume-row {
+      display: grid;
+      grid-template-columns: 1fr 70px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .playback-volume-row input[type="number"] {
+      padding: 9px 10px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
 
     .signal-visualizer {
       display: grid;
@@ -1892,6 +1941,17 @@
         </div>
         <div class="card-body">
           <audio id="audioPlayer" controls></audio>
+
+          <div class="playback-volume-lab" aria-label="Playback volume">
+            <div class="playback-volume-head">
+              <span>Playback Volume</span>
+              <small id="playbackVolumeReadout">100%</small>
+            </div>
+            <div class="playback-volume-row">
+              <input id="playbackVolume" type="range" min="0" max="200" step="1" value="100">
+              <input id="playbackVolumeNum" type="number" min="0" max="200" step="1" value="100">
+            </div>
+          </div>
 
           <div class="signal-visualizer" aria-label="Audio visualizer">
             <div class="signal-visualizer-head">
@@ -2781,6 +2841,9 @@
       demoBtn: document.querySelector("#demoBtn"),
       status: document.querySelector("#status"),
       audioPlayer: document.querySelector("#audioPlayer"),
+      playbackVolume: document.querySelector("#playbackVolume"),
+      playbackVolumeNum: document.querySelector("#playbackVolumeNum"),
+      playbackVolumeReadout: document.querySelector("#playbackVolumeReadout"),
       waveformCanvas: document.querySelector("#waveformCanvas"),
       spectrumCanvas: document.querySelector("#spectrumCanvas"),
       visualizerTitle: document.querySelector("#visualizerTitle"),
@@ -2850,6 +2913,9 @@
     };
     let visualizerFrameId = null;
     let audioUnlockEl = null;
+    let playbackAudioContext = null;
+    let playbackSourceNode = null;
+    let playbackGainNode = null;
 
     function init() {
       customVoiceRecipes = loadCustomVoiceRecipes();
@@ -2926,7 +2992,14 @@
         el.textInput.value = "Robo Phonix online. Voice engine stable. Robot synthesis ready for deployment.";
       });
 
-      el.audioPlayer.addEventListener("play", startVisualizerPlayback);
+      el.playbackVolume.addEventListener("input", () => setPlaybackVolume(el.playbackVolume.value, true));
+      el.playbackVolumeNum.addEventListener("input", () => setPlaybackVolume(el.playbackVolumeNum.value, true));
+      setPlaybackVolume(100, false);
+
+      el.audioPlayer.addEventListener("play", () => {
+        applyPlaybackVolume(false);
+        startVisualizerPlayback();
+      });
       el.audioPlayer.addEventListener("pause", drawCurrentVisualizer);
       el.audioPlayer.addEventListener("ended", () => {
         stopVisualizerPlayback();
@@ -4673,13 +4746,70 @@
       } catch (_) {}
     }
 
-    function resetAudioPlayerPlaybackLevel() {
+    function getPlaybackVolumePercent() {
+      return clampInt(el.playbackVolume?.value ?? 100, 0, 200);
+    }
+
+    function setPlaybackVolume(value, allowAudioGraphResume = false) {
+      const percent = clampInt(value, 0, 200);
+      if (el.playbackVolume) el.playbackVolume.value = percent;
+      if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
+      if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
+      applyPlaybackVolume(allowAudioGraphResume);
+    }
+
+    function ensurePlaybackGainGraph(allowResume = false) {
+      if (playbackGainNode || !el.audioPlayer) return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      playbackAudioContext = playbackAudioContext || new AudioContextClass();
+      playbackSourceNode = playbackAudioContext.createMediaElementSource(el.audioPlayer);
+      playbackGainNode = playbackAudioContext.createGain();
+      playbackSourceNode.connect(playbackGainNode);
+      playbackGainNode.connect(playbackAudioContext.destination);
+
+      if (allowResume && playbackAudioContext.state === "suspended") {
+        playbackAudioContext.resume().catch(() => {});
+      }
+    }
+
+    function applyPlaybackVolume(allowAudioGraphResume = false) {
       try {
         if (!el.audioPlayer) return;
-        el.audioPlayer.muted = false;
-        el.audioPlayer.volume = 1;
+        const percent = getPlaybackVolumePercent();
+        const gain = percent / 100;
+        el.audioPlayer.muted = percent <= 0;
         el.audioPlayer.setAttribute("playsinline", "");
-      } catch (_) {}
+
+        if (percent <= 100 && !playbackGainNode) {
+          el.audioPlayer.volume = gain;
+          return;
+        }
+
+        ensurePlaybackGainGraph(allowAudioGraphResume);
+
+        if (playbackGainNode) {
+          el.audioPlayer.volume = 1;
+          playbackGainNode.gain.value = gain;
+          if (allowAudioGraphResume && playbackAudioContext?.state === "suspended") {
+            playbackAudioContext.resume().catch(() => {});
+          }
+        } else {
+          el.audioPlayer.volume = Math.min(1, gain);
+        }
+      } catch (error) {
+        console.error(error);
+        if (el.audioPlayer) {
+          const gain = Math.min(1, getPlaybackVolumePercent() / 100);
+          el.audioPlayer.volume = gain;
+          el.audioPlayer.muted = gain <= 0;
+        }
+      }
+    }
+
+    function resetAudioPlayerPlaybackLevel() {
+      applyPlaybackVolume(false);
     }
 
     async function startAutoMic() {
