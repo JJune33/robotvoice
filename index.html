@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.3 Safe Mic Upload Recovery</title>
+  <title>Robo Phonix v21.4 Simple UX</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -1435,14 +1435,14 @@
     <aside id="voiceDrawer" class="voice-drawer" aria-hidden="true">
       <div class="voice-drawer-head">
         <div>
-          <p>Voice Rack</p>
-          <h2>Robo Phonix Voice Rack</h2>
+          <p>Voice Presets</p>
+          <h2>Voice Presets</h2>
         </div>
         <button id="closeVoiceDrawer" class="icon-button" type="button" aria-label="Close voice rack">×</button>
       </div>
 
       <div class="voice-search-wrap">
-        <input id="voiceSearch" class="voice-search" type="search" placeholder="Search voice">
+        <input id="voiceSearch" class="voice-search" type="search" placeholder="Search voices">
       </div>
 
       <div id="voiceList" class="voice-list"></div>
@@ -1451,14 +1451,14 @@
     <aside id="vocoderDrawer" class="voice-drawer vocoder-drawer" aria-hidden="true">
       <div class="voice-drawer-head">
         <div>
-          <p>Vocoder Rack</p>
-          <h2>Robo Phonix Vocoder Rack</h2>
+          <p>Vocoder Presets</p>
+          <h2>Vocoder Presets</h2>
         </div>
         <button id="closeVocoderDrawer" class="icon-button" type="button" aria-label="Close vocoder rack">×</button>
       </div>
 
       <div class="voice-search-wrap">
-        <input id="vocoderSearch" class="voice-search" type="search" placeholder="Search vocoder">
+        <input id="vocoderSearch" class="voice-search" type="search" placeholder="Search vocoders">
       </div>
 
       <div id="vocoderList" class="voice-list"></div>
@@ -1487,7 +1487,7 @@
       <h1><span>Robo</span> Phonix</h1>
 
       <p>
-        Text to robot voice generation, auto mic render, audio robotizer and custom vocoder preset design in a futuristic lab interface.
+        Create robot voices from text, mic or audio files. Switch to Vocoder FX for synth vocoder speech.
       </p>
 
       <div class="hero-rails">
@@ -1499,18 +1499,12 @@
     <section class="app">
       <div class="card">
         <div class="card-header">
-          <h2>Tekst en stem</h2>
+          <h2>Input</h2>
         </div>
         <div class="card-body">
-          <label class="tts-text-lab">
-            Tekst voor Robot FX TTS
-            <textarea id="textInput">Robo Phonix online. Voice engine stable. Robot synthesis ready for deployment.</textarea>
-            <span class="hint">Alleen zichtbaar in Robot FX. Vocoder FX gebruikt upload, mic recorder of Auto Mic als audio input.</span>
-          </label>
-
           <div class="engine-mode-lab">
             <div class="engine-mode-head">
-              <span>Engine Mode</span>
+              <span>Mode</span>
               <small id="engineModeBadge">Robot FX</small>
             </div>
 
@@ -1519,83 +1513,11 @@
               <button id="vocoderModeBtn" class="engine-mode-button" type="button" aria-pressed="false">Vocoder FX</button>
             </div>
 
-            <small id="engineModeMeta" class="engine-mode-meta">Robot FX uses Voice Rack, text, upload and microphone.</small>
-          </div>
-
-          <div class="audio-upload-lab">
-            <div class="audio-upload-head">
-              <span>Audio Robotizer</span>
-              <small>MP3 / WAV</small>
-            </div>
-
-            <label class="audio-drop" for="audioUploadInput">
-              <strong id="audioUploadTitle">Drop or choose audio</strong>
-              <small id="audioUploadMeta">Use the selected voice preset as robot FX chain</small>
-              <input id="audioUploadInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden>
-            </label>
-
-            <div class="audio-upload-actions">
-              <button id="processAudioBtn" class="secondary micro-button" type="button" disabled>Robotize audio</button>
-              <button id="clearAudioBtn" class="secondary micro-button" type="button" disabled>Clear audio</button>
-            </div>
-          </div>
-
-          <div class="mic-record-lab">
-            <div class="mic-record-head">
-              <span>Mic Recorder</span>
-              <small id="recordingTimer">00:00</small>
-            </div>
-
-            <div class="mic-record-display">
-              <strong id="recordingTitle">No recording yet</strong>
-              <small id="recordingMeta">Record your voice, then robotize it with the selected preset</small>
-            </div>
-
-            <div class="mic-record-actions">
-              <button id="startRecordingBtn" class="secondary micro-button" type="button">Start recording</button>
-              <button id="stopRecordingBtn" class="secondary micro-button" type="button" disabled>Stop</button>
-              <button id="processRecordingBtn" class="secondary micro-button" type="button" disabled>Robotize recording</button>
-              <button id="clearRecordingBtn" class="secondary micro-button" type="button" disabled>Clear</button>
-            </div>
-          </div>
-
-          <div class="auto-mic-lab">
-            <div class="auto-mic-head">
-              <span>Auto Mic Render Lab</span>
-              <small id="autoMicState">Idle</small>
-            </div>
-
-            <div id="autoMicDisplay" class="auto-mic-display">
-              <strong id="autoMicTitle">Auto mic is off</strong>
-              <small id="autoMicMeta">Start Auto Mic, speak, pause, then Robo Phonix trims, renders and plays automatically.</small>
-              <div class="auto-mic-meter" aria-hidden="true"><div id="autoMicMeterBar" class="auto-mic-meter-bar"></div></div>
-            </div>
-
-            <div class="auto-mic-actions">
-              <button id="startAutoMicBtn" class="secondary micro-button" type="button">Start Auto Mic</button>
-              <button id="stopAutoMicBtn" class="secondary micro-button" type="button" disabled>Stop Auto Mic</button>
-              <label class="auto-mic-toggle"><input id="autoMicAutoPlay" type="checkbox" checked> Auto playback</label>
-              <label class="auto-mic-toggle"><input id="autoMicLiveMonitor" type="checkbox"> Live Monitor EXP</label>
-            </div>
-
-            <div class="auto-mic-settings">
-              <label>
-                Silence delay <span id="autoMicDelayReadout">0.8s</span>
-                <input id="autoMicDelay" type="range" min="400" max="1800" step="100" value="800">
-              </label>
-              <label>
-                Sensitivity <span id="autoMicSensitivityReadout">55</span>
-                <input id="autoMicSensitivity" type="range" min="1" max="100" step="1" value="55">
-              </label>
-              <label>
-                Max take <span id="autoMicMaxTakeReadout">20s</span>
-                <input id="autoMicMaxTake" type="range" min="5" max="30" step="1" value="20">
-              </label>
-            </div>
+            <small id="engineModeMeta" class="engine-mode-meta">Create robot voices from text, mic or audio files.</small>
           </div>
 
           <div class="voice-control">
-            <div class="voice-label">Voice</div>
+            <div class="voice-label">Voice Preset</div>
             <button id="openVoiceDrawer" class="voice-selected" type="button">
               <span>
                 <strong id="selectedVoiceName">Calm Space AI</strong>
@@ -1607,20 +1529,20 @@
 
           <div class="preset-lab">
             <div class="preset-lab-head">
-              <span>Custom Presets</span>
+              <span>Saved Presets</span>
               <small id="customPresetCount">0 saved</small>
             </div>
 
             <div class="preset-actions">
-              <button id="saveCustomPresetBtn" class="secondary micro-button" type="button">Save current</button>
-              <button id="exportCustomPresetsBtn" class="secondary micro-button" type="button">Export JSON</button>
-              <button id="importCustomPresetsBtn" class="secondary micro-button" type="button">Import JSON</button>
+              <button id="saveCustomPresetBtn" class="secondary micro-button" type="button">Save</button>
+              <button id="exportCustomPresetsBtn" class="secondary micro-button" type="button">Export</button>
+              <button id="importCustomPresetsBtn" class="secondary micro-button" type="button">Import</button>
               <input id="importCustomPresetsFile" type="file" accept="application/json,.json" hidden>
             </div>
           </div>
 
           <div class="vocoder-control">
-            <div class="voice-label">Vocoder</div>
+            <div class="voice-label">Vocoder Preset</div>
             <button id="openVocoderDrawer" class="voice-selected vocoder-selected" type="button">
               <span>
                 <strong id="selectedVocoderName">Old School Rap Robot</strong>
@@ -1632,8 +1554,8 @@
 
           <div class="vocoder-tweak-lab">
             <div class="vocoder-tweak-head">
-              <span>Vocoder Macro Strip</span>
-              <small>High impact</small>
+              <span>Vocoder Controls</span>
+              <small>Live tone</small>
             </div>
 
             <div class="vocoder-tweak-grid">
@@ -1648,7 +1570,7 @@
                   <option value="clean-saw">Clean saw</option>
                   <option value="robot-chord">Robot chord</option>
                 </select>
-                <span class="vocoder-readout">Carrier now also reshapes tone, pitch weight and synth texture.</span>
+                <span class="vocoder-readout">Carrier shapes tone, pitch weight and synth texture.</span>
               </label>
 
               <label>
@@ -1687,21 +1609,27 @@
 
           <div class="custom-vocoder-preset-lab">
             <div class="custom-vocoder-preset-head">
-              <span>Custom Vocoder Presets</span>
+              <span>Saved Vocoders</span>
               <small id="customVocoderPresetCount">0 saved</small>
             </div>
 
             <div class="preset-actions">
-              <button id="saveCustomVocoderPresetBtn" class="secondary micro-button" type="button">Save current</button>
-              <button id="exportCustomVocoderPresetsBtn" class="secondary micro-button" type="button">Export JSON</button>
-              <button id="importCustomVocoderPresetsBtn" class="secondary micro-button" type="button">Import JSON</button>
+              <button id="saveCustomVocoderPresetBtn" class="secondary micro-button" type="button">Save</button>
+              <button id="exportCustomVocoderPresetsBtn" class="secondary micro-button" type="button">Export</button>
+              <button id="importCustomVocoderPresetsBtn" class="secondary micro-button" type="button">Import</button>
               <input id="importCustomVocoderPresetsFile" type="file" accept="application/json,.json" hidden>
             </div>
           </div>
 
+          <label class="tts-text-lab">
+            Text to Speech
+            <textarea id="textInput">Robo Phonix online. Voice engine stable. Robot synthesis ready for deployment.</textarea>
+            <span class="hint">Type text, choose a voice preset, then generate audio.</span>
+          </label>
+
           <div class="grid">
             <label>
-              Snelheid
+              Speed
               <div class="slider-row">
                 <input id="speed" type="range" min="80" max="260" value="140">
                 <input id="speedNum" type="number" min="80" max="260" value="140">
@@ -1725,7 +1653,7 @@
             </label>
 
             <label>
-              MP3 bitrate
+              MP3 Bitrate
               <div class="slider-row">
                 <input id="kbps" type="range" min="64" max="192" step="32" value="128">
                 <input id="kbpsNum" type="number" min="64" max="192" step="32" value="128">
@@ -1734,11 +1662,83 @@
           </div>
 
           <div class="buttons">
-            <button id="generateBtn">Genereer MP3</button>
-            <button id="demoBtn" class="secondary">Zet demotekst terug</button>
+            <button id="generateBtn">Generate</button>
+            <button id="demoBtn" class="secondary">Reset Text</button>
           </div>
 
-          <div id="status" class="status">Klaar. De eerste generatie kan wat langer duren omdat de WASM synth geladen wordt.</div>
+          <div class="mic-record-lab">
+            <div class="mic-record-head">
+              <span>Mic Input</span>
+              <small id="recordingTimer">00:00</small>
+            </div>
+
+            <div class="mic-record-display">
+              <strong id="recordingTitle">No recording yet</strong>
+              <small id="recordingMeta">Record your voice and apply the selected Robot FX preset.</small>
+            </div>
+
+            <div class="mic-record-actions">
+              <button id="startRecordingBtn" class="secondary micro-button" type="button">Record</button>
+              <button id="stopRecordingBtn" class="secondary micro-button" type="button" disabled>Stop</button>
+              <button id="processRecordingBtn" class="secondary micro-button" type="button" disabled>Process</button>
+              <button id="clearRecordingBtn" class="secondary micro-button" type="button" disabled>Clear</button>
+            </div>
+          </div>
+
+          <div class="auto-mic-lab">
+            <div class="auto-mic-head">
+              <span>Auto Mic</span>
+              <small id="autoMicState">Idle</small>
+            </div>
+
+            <div id="autoMicDisplay" class="auto-mic-display">
+              <strong id="autoMicTitle">Auto Mic is off</strong>
+              <small id="autoMicMeta">Speak, pause, then render automatically.</small>
+              <div class="auto-mic-meter" aria-hidden="true"><div id="autoMicMeterBar" class="auto-mic-meter-bar"></div></div>
+            </div>
+
+            <div class="auto-mic-actions">
+              <button id="startAutoMicBtn" class="secondary micro-button" type="button">Start</button>
+              <button id="stopAutoMicBtn" class="secondary micro-button" type="button" disabled>Stop</button>
+              <label class="auto-mic-toggle"><input id="autoMicAutoPlay" type="checkbox" checked> Auto Play</label>
+              <label class="auto-mic-toggle"><input id="autoMicLiveMonitor" type="checkbox"> Live Monitor</label>
+            </div>
+
+            <div class="auto-mic-settings">
+              <label>
+                Silence <span id="autoMicDelayReadout">0.8s</span>
+                <input id="autoMicDelay" type="range" min="400" max="1800" step="100" value="800">
+              </label>
+              <label>
+                Sensitivity <span id="autoMicSensitivityReadout">55</span>
+                <input id="autoMicSensitivity" type="range" min="1" max="100" step="1" value="55">
+              </label>
+              <label>
+                Max Take <span id="autoMicMaxTakeReadout">20s</span>
+                <input id="autoMicMaxTake" type="range" min="5" max="30" step="1" value="20">
+              </label>
+            </div>
+          </div>
+
+          <div class="audio-upload-lab">
+            <div class="audio-upload-head">
+              <span>File Input</span>
+              <small>MP3 / WAV</small>
+            </div>
+
+            <label class="audio-drop" for="audioUploadInput">
+              <strong id="audioUploadTitle">Drop or choose audio</strong>
+              <small id="audioUploadMeta">Apply the selected Robot FX preset to an audio file.</small>
+              <input id="audioUploadInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden>
+            </label>
+
+            <div class="audio-upload-actions">
+              <button id="processAudioBtn" class="secondary micro-button" type="button" disabled>Process File</button>
+              <button id="clearAudioBtn" class="secondary micro-button" type="button" disabled>Clear</button>
+            </div>
+          </div>
+
+          <div id="status" class="status">Ready. The first render may take a little longer while the synth loads.</div>
         </div>
       </div>
 
@@ -1761,7 +1761,7 @@
             <a id="downloadMp3" class="download disabled" download="robot-voice.mp3" href="#">Download MP3</a>
             <a id="downloadWav" class="download secondary disabled" download="robot-voice.wav" href="#">Download WAV</a>
           </div>
-</div>
+        </div>
       </aside>
     </section>
   </main>
@@ -3089,8 +3089,8 @@
       el.vocoderModeBtn.setAttribute("aria-pressed", engineMode === "vocoder" ? "true" : "false");
       el.engineModeBadge.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
       el.engineModeMeta.textContent = engineMode === "vocoder"
-        ? "Vocoder FX uses Vocoder Rack plus upload, mic recorder or Auto Mic. Text TTS is disabled in this mode."
-        : "Robot FX uses Voice Rack, text TTS, upload, mic recorder and Auto Mic.";
+        ? "Vocoder FX uses vocoder presets with mic, Auto Mic or audio files."
+        : "Create robot voices from text, mic or audio files.";
 
       updateProcessButtonLabels();
       refreshAudioAndRecordingHints();
@@ -3099,31 +3099,31 @@
 
     function updateProcessButtonLabels() {
       if (!el.processAudioBtn.disabled || uploadedAudioFile) {
-        el.processAudioBtn.textContent = engineMode === "vocoder" ? "Vocode audio" : "Robotize audio";
+        el.processAudioBtn.textContent = engineMode === "vocoder" ? "Vocode File" : "Process File";
       } else {
-        el.processAudioBtn.textContent = engineMode === "vocoder" ? "Vocode audio" : "Robotize audio";
+        el.processAudioBtn.textContent = engineMode === "vocoder" ? "Vocode File" : "Process File";
       }
 
       if (!el.processRecordingBtn.disabled || recordedAudioFile) {
-        el.processRecordingBtn.textContent = engineMode === "vocoder" ? "Vocode recording" : "Robotize recording";
+        el.processRecordingBtn.textContent = engineMode === "vocoder" ? "Vocode" : "Process";
       } else {
-        el.processRecordingBtn.textContent = engineMode === "vocoder" ? "Vocode recording" : "Robotize recording";
+        el.processRecordingBtn.textContent = engineMode === "vocoder" ? "Vocode" : "Process";
       }
     }
 
     function refreshAudioAndRecordingHints() {
       if (!uploadedAudioFile) {
         el.audioUploadMeta.textContent = engineMode === "vocoder"
-          ? "Use the selected vocoder preset as carrier engine"
-          : "Use the selected voice preset as robot FX chain";
+          ? "Apply the selected vocoder preset to an audio file."
+          : "Apply the selected Robot FX preset to an audio file.";
       } else {
         el.audioUploadMeta.textContent = `${formatBytes(uploadedAudioFile.size)} · ready for ${engineMode === "vocoder" ? "vocoder FX" : "robot FX"}`;
       }
 
       if (!recordedAudioFile && (!mediaRecorder || mediaRecorder.state === "inactive")) {
         el.recordingMeta.textContent = engineMode === "vocoder"
-          ? "Record your voice, then vocode it with the selected vocoder preset"
-          : "Record your voice, then robotize it with the selected preset";
+          ? "Record your voice and apply the selected vocoder preset."
+          : "Record your voice and apply the selected Robot FX preset.";
       } else if (recordedAudioFile) {
         el.recordingMeta.textContent = `${formatBytes(recordedAudioFile.size)} · ready for ${engineMode === "vocoder" ? "vocoder FX" : "robot FX"}`;
       }
@@ -3558,7 +3558,7 @@
 
     function lockUi(isLocked) {
       el.generateBtn.disabled = isLocked;
-      el.generateBtn.textContent = isLocked ? "Bezig..." : "Genereer MP3";
+      el.generateBtn.textContent = isLocked ? "Working..." : "Generate";
     }
 
     function handleAudioUploadChange(event) {
@@ -3592,15 +3592,15 @@
       el.processAudioBtn.disabled = false;
       el.clearAudioBtn.disabled = false;
       setStatus(engineMode === "vocoder"
-        ? "<strong>Audio loaded.</strong> Choose or tweak a vocoder preset and click Vocode audio."
-        : "<strong>Audio loaded.</strong> Choose a voice preset and click Robotize audio.");
+        ? "<strong>Audio loaded.</strong> Choose or tweak a vocoder preset and click Vocode File."
+        : "<strong>Audio loaded.</strong> Choose a voice preset and click Process File.");
     }
 
     function clearUploadedAudio() {
       uploadedAudioFile = null;
       el.audioUploadInput.value = "";
       el.audioUploadTitle.textContent = "Drop or choose audio";
-      el.audioUploadMeta.textContent = engineMode === "vocoder" ? "Use the selected vocoder preset as carrier engine" : "Use the selected voice preset as robot FX chain";
+      el.audioUploadMeta.textContent = engineMode === "vocoder" ? "Apply the selected vocoder preset to an audio file." : "Apply the selected Robot FX preset to an audio file.";
       el.processAudioBtn.disabled = true;
       el.clearAudioBtn.disabled = true;
       setStatus("<strong>Cleared.</strong> Audio upload removed.");
@@ -3699,7 +3699,7 @@
     function lockAudioUi(isLocked) {
       el.processAudioBtn.disabled = isLocked || !uploadedAudioFile;
       el.clearAudioBtn.disabled = isLocked || !uploadedAudioFile;
-      el.processAudioBtn.textContent = isLocked ? "Processing..." : (engineMode === "vocoder" ? "Vocode audio" : "Robotize audio");
+      el.processAudioBtn.textContent = isLocked ? "Processing..." : (engineMode === "vocoder" ? "Vocode File" : "Process File");
     }
 
     function formatBytes(bytes) {
@@ -3804,8 +3804,8 @@
       el.micRecordDisplay.classList.remove("is-recording");
 
       setStatus(engineMode === "vocoder"
-        ? "<strong>Recording ready.</strong> Choose or tweak a vocoder preset and click Vocode recording."
-        : "<strong>Recording ready.</strong> Choose a voice preset and click Robotize recording.");
+        ? "<strong>Recording ready.</strong> Choose or tweak a vocoder preset and click Vocode."
+        : "<strong>Recording ready.</strong> Choose a voice preset and click Process.");
     }
 
     function clearRecordedAudio(showStatus = true) {
@@ -3821,7 +3821,7 @@
       mediaRecorder = null;
 
       el.recordingTitle.textContent = "No recording yet";
-      el.recordingMeta.textContent = engineMode === "vocoder" ? "Record your voice, then vocode it with the selected vocoder preset" : "Record your voice, then robotize it with the selected preset";
+      el.recordingMeta.textContent = engineMode === "vocoder" ? "Record your voice and apply the selected vocoder preset." : "Record your voice and apply the selected Robot FX preset.";
       el.recordingTimer.textContent = "00:00";
       el.startRecordingBtn.disabled = false;
       el.stopRecordingBtn.disabled = true;
@@ -4476,28 +4476,28 @@
 
       if (state === "idle") {
         el.autoMicState.textContent = "Idle";
-        el.autoMicTitle.textContent = "Auto mic is off";
-        el.autoMicMeta.textContent = "Start Auto Mic, speak, pause, then Robo Phonix trims, renders and plays automatically.";
+        el.autoMicTitle.textContent = "Auto Mic is off";
+        el.autoMicMeta.textContent = "Speak, pause, then render automatically.";
       } else if (state === "listening") {
         el.autoMicState.textContent = "Listening";
-        el.autoMicTitle.textContent = "Listening for speech";
+        el.autoMicTitle.textContent = "Listening";
         el.autoMicMeta.textContent = `${engineLabel} armed. Smart pre-trigger and tail trim are active.`;
       } else if (state === "capturing") {
         el.autoMicState.textContent = "Speech";
         el.autoMicTitle.textContent = "Speech detected";
-        el.autoMicMeta.textContent = "Recording this take. Stop talking to trigger auto render.";
+        el.autoMicMeta.textContent = "Capturing this take. Stop talking to render.";
       } else if (state === "max") {
         el.autoMicState.textContent = "Max take";
         el.autoMicTitle.textContent = "Max take reached";
-        el.autoMicMeta.textContent = "Rendering the current take now.";
+        el.autoMicMeta.textContent = "Rendering this take.";
       } else if (state === "rendering") {
         el.autoMicState.textContent = "Rendering";
         el.autoMicTitle.textContent = "Rendering after silence";
         el.autoMicMeta.textContent = `${engineLabel} is processing the captured take.`;
       } else if (state === "playing") {
         el.autoMicState.textContent = "Playing";
-        el.autoMicTitle.textContent = "Auto playback";
-        el.autoMicMeta.textContent = "The rendered result is playing. Listening resumes after playback.";
+        el.autoMicTitle.textContent = "Auto Play";
+        el.autoMicMeta.textContent = "Playing result. Listening resumes after playback.";
       }
     }
 
@@ -4626,7 +4626,7 @@
       el.stopRecordingBtn.disabled = true;
       el.processRecordingBtn.disabled = isLocked || !recordedAudioFile;
       el.clearRecordingBtn.disabled = isLocked || !recordedAudioFile;
-      el.processRecordingBtn.textContent = isLocked ? "Processing..." : (engineMode === "vocoder" ? "Vocode recording" : "Robotize recording");
+      el.processRecordingBtn.textContent = isLocked ? "Processing..." : (engineMode === "vocoder" ? "Vocode" : "Process");
     }
 
     function pickSupportedRecordingMimeType() {
@@ -5030,7 +5030,7 @@
 
       const text = el.textInput.value.trim();
       if (!text) {
-        setStatus("<strong>Geen tekst.</strong> Vul eerst tekst in.", true);
+        setStatus("<strong>No text.</strong> Type some text first.", true);
         return;
       }
 
@@ -5043,7 +5043,7 @@
       try {
         lockUi(true);
         revokeUrls();
-        setStatus("<strong>Stap 1 van 3.</strong> Spraak synthese wordt gestart.");
+        setStatus("<strong>Step 1 of 3.</strong> Starting speech synthesis.");
 
         const wavBytes = await synthesizeWav({
           text,
@@ -5053,7 +5053,7 @@
           amp
         });
 
-        setStatus("<strong>Stap 2 van 3.</strong> Robot effect wordt toegepast.");
+        setStatus("<strong>Step 2 of 3.</strong> Applying Robot FX.");
 
         const decoded = decodeWav(wavBytes);
         const mono = mixToMono(decoded);
@@ -5061,7 +5061,7 @@
         const int16 = floatToInt16(processed);
         updateVisualizerFromInt16(int16, decoded.sampleRate, "Robot FX TTS");
 
-        setStatus("<strong>Stap 3 van 3.</strong> MP3 wordt gecodeerd.");
+        setStatus("<strong>Step 3 of 3.</strong> Encoding MP3.");
 
         const wavBlob = encodeWavMono(int16, decoded.sampleRate);
         const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
@@ -5079,10 +5079,10 @@
         el.downloadWav.classList.remove("disabled");
 
         const seconds = (int16.length / decoded.sampleRate).toFixed(1);
-        setStatus(`<strong>Klaar.</strong> Audio lengte: ${seconds} sec. MP3 bitrate: ${kbps} kbps.`);
+        setStatus(`<strong>Ready.</strong> Audio length: ${seconds} sec. MP3 bitrate: ${kbps} kbps.`);
       } catch (error) {
         console.error(error);
-        setStatus(`<strong>Fout.</strong> ${escapeHtml(error.message || String(error))}`, true);
+        setStatus(`<strong>Error.</strong> ${escapeHtml(error.message || String(error))}`, true);
       } finally {
         lockUi(false);
       }
@@ -5103,7 +5103,7 @@
 
       const file = module.FS.readFile("robot.wav");
       if (!file || !file.byteLength) {
-        throw new Error("Er is geen WAV output gemaakt. Probeer een andere stem of kortere tekst.");
+        throw new Error("No WAV output was created. Try another voice or shorter text.");
       }
       return file;
     }
@@ -5113,7 +5113,7 @@
       const riff = readString(view, 0, 4);
       const wave = readString(view, 8, 4);
       if (riff !== "RIFF" || wave !== "WAVE") {
-        throw new Error("De synth output is geen geldige WAV.");
+        throw new Error("The synth output is not a valid WAV.");
       }
 
       let offset = 12;
@@ -5146,7 +5146,7 @@
       }
 
       if (audioFormat !== 1) {
-        throw new Error("Alleen PCM WAV wordt ondersteund.");
+        throw new Error("Only PCM WAV is supported.");
       }
       if (!dataOffset || !dataSize) {
         throw new Error("Geen audio data gevonden in de WAV.");
@@ -5165,7 +5165,7 @@
           } else if (bitsPerSample === 8) {
             value = (view.getUint8(p) - 128) / 128;
           } else {
-            throw new Error(`${bitsPerSample} bit WAV wordt nog niet ondersteund.`);
+            throw new Error(`${bitsPerSample} bit WAV is not supported yet.`);
           }
           channelData[ch][i] = value;
           p += bytesPerSample;
