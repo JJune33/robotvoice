@@ -1370,7 +1370,7 @@
       left: 50%;
       top: 50%;
       z-index: 72;
-      width: min(260px, calc(100vw - 46px));
+      width: min(330px, calc(100vw - 34px));
       aspect-ratio: 1;
       color: #050505;
       background: transparent;
@@ -1412,13 +1412,13 @@
       display: grid;
       place-items: center;
       align-content: center;
-      width: 118px;
-      height: 118px;
+      width: 154px;
+      height: 154px;
       border-radius: 999px;
       text-align: center;
       color: #050505;
-      background: rgba(255,255,255,.52);
-      border: 1px solid rgba(255,255,255,.68);
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(255,255,255,.88);
       box-shadow:
         0 0 34px rgba(255,255,255,.24),
         inset 0 1px 0 rgba(255,255,255,.72);
@@ -1427,7 +1427,7 @@
 
     .mic-core-state {
       font-family: Orbitron, Inter, sans-serif;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 1000;
       letter-spacing: .12em;
       text-transform: uppercase;
@@ -1439,7 +1439,7 @@
     .mic-core-value {
       display: block;
       font-family: Orbitron, Inter, sans-serif;
-      font-size: 27px;
+      font-size: 40px;
       line-height: .95;
       font-weight: 1000;
       letter-spacing: -.05em;
@@ -1449,7 +1449,7 @@
     .mic-core-subvalue {
       display: block;
       margin-top: 7px;
-      font-size: 14px;
+      font-size: 18px;
       line-height: 1;
       font-weight: 1000;
       letter-spacing: -.02em;
@@ -1459,13 +1459,13 @@
     .mic-core-mode {
       position: absolute;
       left: 50%;
-      bottom: 22px;
+      bottom: 28px;
       transform: translateX(-50%);
       color: #050505;
       background: linear-gradient(180deg, #d6ff68 0%, #c1ff1a 100%);
       border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 10px;
+      padding: 8px 13px;
+      font-size: 11px;
       font-weight: 1000;
       white-space: nowrap;
       box-shadow: 0 0 18px rgba(193,255,26,.22);
@@ -3979,7 +3979,7 @@
       }
 
       const rms = Math.sqrt(sum / Math.max(1, buffer.length / 2));
-      const level = clamp(Math.pow(clamp(rms * 10.5, 0, 1.4), .7) * 100, 0, 100);
+      const level = clamp(Math.pow(clamp(rms * 16, 0, 1.7), .58) * 100, 0, 100);
       micCorePitchFrame += 1;
       if (micCorePitchFrame % 6 === 0) {
         micCoreLastPitch = estimateMicCorePitch(buffer, sampleRate, rms);
