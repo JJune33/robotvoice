@@ -1364,6 +1364,179 @@
       height: 112px;
     }
 
+
+    .mic-core-hud {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      z-index: 72;
+      width: min(310px, calc(100vw - 42px));
+      padding: 16px;
+      border-radius: 34px;
+      color: #ffffff;
+      background:
+        radial-gradient(circle at 50% 36%, rgba(193,255,26,.2), transparent 8rem),
+        radial-gradient(circle at 52% 54%, rgba(255,0,174,.28), transparent 10rem),
+        linear-gradient(135deg, rgba(5,5,5,.86), rgba(18,18,18,.78));
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow:
+        0 26px 80px rgba(0,0,0,.34),
+        0 0 36px rgba(255,0,174,.2),
+        inset 0 1px 0 rgba(255,255,255,.18);
+      backdrop-filter: blur(14px);
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(.94);
+      opacity: 0;
+      transition: opacity .18s ease, transform .18s ease;
+      overflow: hidden;
+    }
+
+    .mic-core-hud.is-active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .mic-core-hud::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px);
+      background-size: 18px 18px;
+      opacity: .24;
+      pointer-events: none;
+    }
+
+    .mic-core-top,
+    .mic-core-stats {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .mic-core-kicker {
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .mic-core-mode {
+      color: #050505;
+      background: linear-gradient(180deg, #d6ff68 0%, #c1ff1a 100%);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .mic-core-stage {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      margin: 8px auto 10px;
+      width: 210px;
+      max-width: 100%;
+      aspect-ratio: 1;
+    }
+
+    .mic-core-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 999px;
+    }
+
+    .mic-core-center {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      transform: translate(-50%, -50%);
+      display: grid;
+      place-items: center;
+      width: 96px;
+      height: 96px;
+      border-radius: 999px;
+      color: #ffffff;
+      text-align: center;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,.26), transparent 2.8rem),
+        linear-gradient(135deg, rgba(255,0,174,.92), rgba(5,5,5,.9));
+      border: 1px solid rgba(255,255,255,.22);
+      box-shadow:
+        0 0 28px rgba(255,0,174,.24),
+        inset 0 1px 0 rgba(255,255,255,.18);
+    }
+
+    .mic-core-state {
+      font-size: 11px;
+      font-weight: 1000;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .mic-core-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .mic-core-stat {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+      padding: 9px 8px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.12);
+      text-align: center;
+    }
+
+    .mic-core-stat span {
+      color: rgba(255,255,255,.62);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .mic-core-stat strong {
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 1000;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 560px) {
+      .mic-core-hud {
+        width: min(272px, calc(100vw - 30px));
+        padding: 13px;
+        border-radius: 28px;
+      }
+
+      .mic-core-stage {
+        width: 174px;
+        margin: 6px auto 8px;
+      }
+
+      .mic-core-center {
+        width: 82px;
+        height: 82px;
+      }
+
+      .mic-core-stat {
+        padding: 8px 6px;
+      }
+    }
+
     @media (max-width: 860px) {
       .hero-robot-stage {
         opacity: .28;
@@ -1431,6 +1604,23 @@
 <body>
   <main>
     <div id="voiceOverlay" class="voice-overlay" hidden></div>
+
+
+    <div id="micCoreHud" class="mic-core-hud" hidden aria-live="polite">
+      <div class="mic-core-top">
+        <span class="mic-core-kicker">Mic Core</span>
+        <span id="micCoreMode" class="mic-core-mode">Robot FX</span>
+      </div>
+      <div class="mic-core-stage" aria-hidden="true">
+        <canvas id="micCoreCanvas" class="mic-core-canvas" width="260" height="260"></canvas>
+        <div class="mic-core-center"><span id="micCoreState" class="mic-core-state">Listening</span></div>
+      </div>
+      <div class="mic-core-stats">
+        <div class="mic-core-stat"><span>Level</span><strong id="micCoreLevel">0%</strong></div>
+        <div class="mic-core-stat"><span>Pitch</span><strong id="micCorePitch">--</strong></div>
+        <div class="mic-core-stat"><span>Take</span><strong id="micCoreTake">00:00</strong></div>
+      </div>
+    </div>
 
     <aside id="voiceDrawer" class="voice-drawer" aria-hidden="true">
       <div class="voice-drawer-head">
@@ -2548,6 +2738,13 @@
       closeVoiceDrawer: document.querySelector("#closeVoiceDrawer"),
       voiceDrawer: document.querySelector("#voiceDrawer"),
       voiceOverlay: document.querySelector("#voiceOverlay"),
+      micCoreHud: document.querySelector("#micCoreHud"),
+      micCoreCanvas: document.querySelector("#micCoreCanvas"),
+      micCoreState: document.querySelector("#micCoreState"),
+      micCoreMode: document.querySelector("#micCoreMode"),
+      micCoreLevel: document.querySelector("#micCoreLevel"),
+      micCorePitch: document.querySelector("#micCorePitch"),
+      micCoreTake: document.querySelector("#micCoreTake"),
       voiceSearch: document.querySelector("#voiceSearch"),
       voiceList: document.querySelector("#voiceList"),
       vocoderDrawer: document.querySelector("#vocoderDrawer"),
@@ -2644,6 +2841,14 @@
     let recordingStream = null;
     let recordingStartedAt = 0;
     let recordingTimerId = null;
+    let manualMicAudioContext = null;
+    let manualMicSource = null;
+    let manualMicAnalyser = null;
+    let manualMicBuffer = null;
+    let micCoreFrameId = null;
+    let micCoreStartedAt = 0;
+    let micCoreLastPitch = "--";
+    let micCorePitchFrame = 0;
     let autoMicStream = null;
     let autoMicAudioContext = null;
     let autoMicSource = null;
@@ -3719,6 +3924,222 @@
       return `${base}_${preset}_${label}_${stamp}.${extension}`;
     }
 
+
+    function startManualMicCore(stream) {
+      try {
+        stopManualMicCore(false);
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass || !stream) return;
+
+        manualMicAudioContext = new AudioContextClass();
+        manualMicSource = manualMicAudioContext.createMediaStreamSource(stream);
+        manualMicAnalyser = manualMicAudioContext.createAnalyser();
+        manualMicAnalyser.fftSize = 1024;
+        manualMicAnalyser.smoothingTimeConstant = .38;
+        manualMicBuffer = new Uint8Array(manualMicAnalyser.fftSize);
+        manualMicSource.connect(manualMicAnalyser);
+        micCoreStartedAt = Date.now();
+        showMicCore("Recording");
+        loopManualMicCore();
+      } catch (error) {
+        console.warn("Mic Core unavailable", error);
+        stopManualMicCore(false);
+      }
+    }
+
+    function loopManualMicCore() {
+      if (!manualMicAnalyser || !manualMicBuffer) return;
+      manualMicAnalyser.getByteTimeDomainData(manualMicBuffer);
+      updateMicCoreFromByteBuffer(manualMicBuffer, manualMicAudioContext?.sampleRate || 44100, "Recording", micCoreStartedAt);
+      micCoreFrameId = requestAnimationFrame(loopManualMicCore);
+    }
+
+    function stopManualMicCore(hide = true) {
+      if (micCoreFrameId) {
+        cancelAnimationFrame(micCoreFrameId);
+        micCoreFrameId = null;
+      }
+
+      if (manualMicSource) {
+        try { manualMicSource.disconnect(); } catch (_) {}
+        manualMicSource = null;
+      }
+
+      if (manualMicAudioContext && manualMicAudioContext.close) {
+        manualMicAudioContext.close().catch(() => {});
+      }
+
+      manualMicAudioContext = null;
+      manualMicAnalyser = null;
+      manualMicBuffer = null;
+      micCoreStartedAt = 0;
+      micCoreLastPitch = "--";
+      micCorePitchFrame = 0;
+
+      if (hide && !autoMicActive && !autoMicRendering && !autoMicPausedForPlayback) {
+        hideMicCore();
+      }
+    }
+
+    function showMicCore(state = "Listening") {
+      if (!el.micCoreHud || !el.micCoreCanvas) return;
+      el.micCoreHud.hidden = false;
+      el.micCoreMode.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
+      el.micCoreState.textContent = state;
+      requestAnimationFrame(() => el.micCoreHud.classList.add("is-active"));
+    }
+
+    function hideMicCore() {
+      if (!el.micCoreHud) return;
+      el.micCoreHud.classList.remove("is-active");
+      setTimeout(() => {
+        if (!el.micCoreHud.classList.contains("is-active")) {
+          el.micCoreHud.hidden = true;
+        }
+      }, 190);
+    }
+
+    function updateMicCoreFromByteBuffer(buffer, sampleRate, state, startedAt = 0) {
+      if (!buffer || !buffer.length || !el.micCoreCanvas) return;
+      showMicCore(state);
+
+      let sum = 0;
+      for (let i = 0; i < buffer.length; i++) {
+        const value = (buffer[i] - 128) / 128;
+        sum += value * value;
+      }
+
+      const rms = Math.sqrt(sum / Math.max(1, buffer.length));
+      const level = clamp(rms * 260, 0, 100);
+      micCorePitchFrame = (micCorePitchFrame + 1) % 6;
+      if (micCorePitchFrame === 0 || micCoreLastPitch === "--") {
+        micCoreLastPitch = estimateMicCorePitch(buffer, sampleRate, rms);
+      }
+
+      el.micCoreMode.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
+      el.micCoreState.textContent = state;
+      el.micCoreLevel.textContent = `${level.toFixed(0)}%`;
+      el.micCorePitch.textContent = micCoreLastPitch;
+      el.micCoreTake.textContent = formatMicCoreTime(startedAt ? Date.now() - startedAt : 0);
+      drawMicCoreCanvas(buffer, level, state);
+    }
+
+    function updateMicCoreStatic(state, startedAt = 0, level = 0) {
+      showMicCore(state);
+      el.micCoreLevel.textContent = `${level.toFixed(0)}%`;
+      el.micCorePitch.textContent = state === "Playing" || state === "Rendering" ? "--" : micCoreLastPitch;
+      el.micCoreTake.textContent = formatMicCoreTime(startedAt ? Date.now() - startedAt : 0);
+      drawMicCoreCanvas(null, level, state);
+    }
+
+    function estimateMicCorePitch(buffer, sampleRate, rms) {
+      if (!sampleRate || rms < .012) return "--";
+      let crossings = 0;
+      let previous = buffer[0] - 128;
+
+      for (let i = 1; i < buffer.length; i++) {
+        const current = buffer[i] - 128;
+        if ((previous < 0 && current >= 0) || (previous >= 0 && current < 0)) {
+          crossings += 1;
+        }
+        previous = current;
+      }
+
+      const hz = clamp((crossings * sampleRate) / (2 * buffer.length), 45, 850);
+      if (!Number.isFinite(hz) || hz < 55) return "Low";
+      if (hz > 420) return "High";
+      return `${Math.round(hz)} Hz`;
+    }
+
+    function formatMicCoreTime(ms) {
+      const seconds = Math.max(0, Math.floor(ms / 1000));
+      const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const secs = String(seconds % 60).padStart(2, "0");
+      return `${mins}:${secs}`;
+    }
+
+    function drawMicCoreCanvas(buffer, level = 0, state = "Listening") {
+      const canvas = el.micCoreCanvas;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const size = Math.max(160, Math.round((rect.width || 220) * dpr));
+      if (canvas.width !== size || canvas.height !== size) {
+        canvas.width = size;
+        canvas.height = size;
+      }
+
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const width = size / dpr;
+      const height = size / dpr;
+      const cx = width / 2;
+      const cy = height / 2;
+      const radius = Math.min(width, height) * .36;
+      const pulse = clamp(level / 100, 0, 1);
+
+      ctx.clearRect(0, 0, width, height);
+
+      const glow = ctx.createRadialGradient(cx, cy, radius * .1, cx, cy, radius * 1.55);
+      glow.addColorStop(0, "rgba(255,255,255,.16)");
+      glow.addColorStop(.55, "rgba(255,0,174,.16)");
+      glow.addColorStop(1, "rgba(193,255,26,.02)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 1.55, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,.18)";
+      ctx.lineWidth = 1;
+      for (let ring = 1; ring <= 3; ring++) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * (.56 + ring * .22), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      const points = 96;
+      ctx.save();
+      ctx.lineWidth = 2;
+      ctx.shadowColor = state === "Recording" || state === "Speech" ? "rgba(255,0,174,.75)" : "rgba(193,255,26,.55)";
+      ctx.shadowBlur = 12;
+      const wave = ctx.createLinearGradient(0, 0, width, height);
+      wave.addColorStop(0, "rgba(193,255,26,.95)");
+      wave.addColorStop(.5, "rgba(255,255,255,.9)");
+      wave.addColorStop(1, "rgba(255,0,174,.95)");
+      ctx.strokeStyle = wave;
+      ctx.beginPath();
+
+      for (let i = 0; i <= points; i++) {
+        const angle = (i / points) * Math.PI * 2 - Math.PI / 2;
+        let sample = Math.sin(i * .42 + Date.now() * .006) * .25;
+        if (buffer && buffer.length) {
+          const index = Math.min(buffer.length - 1, Math.floor((i / points) * buffer.length));
+          sample = (buffer[index] - 128) / 128;
+        }
+        const dynamicRadius = radius + sample * (10 + pulse * 26) + pulse * 8;
+        const x = cx + Math.cos(angle) * dynamicRadius;
+        const y = cy + Math.sin(angle) * dynamicRadius;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(193,255,26,.8)";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 1.22, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pulse);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     async function startMicRecording() {
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -3728,6 +4149,7 @@
         clearRecordedAudio(false);
 
         recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        startManualMicCore(recordingStream);
         const mimeType = pickSupportedRecordingMimeType();
         const options = mimeType ? { mimeType } : undefined;
 
@@ -3758,6 +4180,7 @@
 
         setStatus("<strong>Recording.</strong> Microphone input is active.");
       } catch (error) {
+        stopManualMicCore(true);
         cleanupRecordingStream();
         setStatus(`<strong>Mic failed.</strong> ${escapeHtml(error.message || String(error))}`, true);
       }
@@ -3770,6 +4193,8 @@
       stopRecordingTimer();
       el.stopRecordingBtn.disabled = true;
       el.recordingMeta.textContent = "Finalizing recording...";
+      updateMicCoreStatic("Finalizing", recordingStartedAt, 0);
+      stopManualMicCore(true);
       cleanupRecordingStream();
     }
 
@@ -3807,6 +4232,7 @@
       }
 
       stopRecordingTimer();
+      stopManualMicCore(true);
       cleanupRecordingStream();
 
       recordedAudioFile = null;
@@ -4271,6 +4697,7 @@
       el.startRecordingBtn.disabled = false;
       el.autoMicMeterBar.style.width = "0%";
       updateAutoMicUi("idle");
+      hideMicCore();
 
       if (showStatus) {
         setStatus("<strong>Auto Mic stopped.</strong> Manual controls are available again.");
@@ -4286,6 +4713,7 @@
       const now = Date.now();
       const levelPercent = clamp((rms / Math.max(.001, threshold * 2.2)) * 100, 0, 100);
       el.autoMicMeterBar.style.width = `${levelPercent.toFixed(0)}%`;
+      updateMicCoreFromByteBuffer(autoMicLevelBuffer, autoMicAudioContext?.sampleRate || 44100, autoMicCapturing ? "Recording" : "Listening", autoMicCapturing ? autoMicStartedAt : 0);
 
       const paused = autoMicRendering || autoMicPausedForPlayback || now < autoMicPauseUntil;
 
@@ -4491,6 +4919,18 @@
         el.autoMicState.textContent = "Playing";
         el.autoMicTitle.textContent = "Auto Play";
         el.autoMicMeta.textContent = "Playing result. Listening resumes after playback.";
+      }
+
+      if (state === "idle") {
+        if (!manualMicAnalyser) hideMicCore();
+      } else if (state === "rendering" || state === "max") {
+        updateMicCoreStatic("Rendering", autoMicStartedAt, 0);
+      } else if (state === "playing") {
+        updateMicCoreStatic("Playing", 0, 18);
+      } else if (state === "capturing") {
+        showMicCore("Recording");
+      } else if (state === "listening") {
+        showMicCore("Listening");
       }
     }
 
