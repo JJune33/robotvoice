@@ -157,7 +157,7 @@
       border-radius: 999px;
       background: rgba(255,255,255,.16);
       color: rgba(0,0,0,.72);
-      font-size: 13px;
+      font-size: 14px;
       position: relative;
       z-index: 2;
       backdrop-filter: blur(6px);
@@ -287,7 +287,7 @@
 
     .card-header h2 {
       margin: 0;
-      font-size: 18px;
+      font-size: 22px;
       letter-spacing: .02em;
       color: #0a0a0a;
       text-transform: uppercase;
@@ -1370,7 +1370,7 @@
       left: 50%;
       top: 50%;
       z-index: 72;
-      width: min(330px, calc(100vw - 34px));
+      width: min(360px, calc(100vw - 28px));
       aspect-ratio: 1;
       color: #050505;
       background: transparent;
@@ -1412,16 +1412,18 @@
       display: grid;
       place-items: center;
       align-content: center;
-      width: 154px;
-      height: 154px;
+      width: 208px;
+      height: 208px;
       border-radius: 999px;
       text-align: center;
       color: #050505;
-      background: rgba(255,255,255,.72);
-      border: 1px solid rgba(255,255,255,.88);
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255,255,255,.92), rgba(255,255,255,.58) 58%, rgba(255,255,255,.34) 100%);
+      border: 1px solid rgba(255,255,255,.92);
       box-shadow:
-        0 0 34px rgba(255,255,255,.24),
-        inset 0 1px 0 rgba(255,255,255,.72);
+        0 0 46px rgba(255,255,255,.38),
+        0 0 18px rgba(255,0,174,.14),
+        inset 0 1px 0 rgba(255,255,255,.82);
       backdrop-filter: blur(10px);
     }
 
@@ -1439,7 +1441,7 @@
     .mic-core-value {
       display: block;
       font-family: Orbitron, Inter, sans-serif;
-      font-size: 40px;
+      font-size: 48px;
       line-height: .95;
       font-weight: 1000;
       letter-spacing: -.05em;
@@ -1453,7 +1455,7 @@
       line-height: 1;
       font-weight: 1000;
       letter-spacing: -.02em;
-      color: rgba(5,5,5,.78);
+      color: rgba(5,5,5,.84);
     }
 
     .mic-core-mode {
@@ -1473,26 +1475,26 @@
 
     @media (max-width: 560px) {
       .mic-core-hud {
-        width: min(218px, calc(100vw - 42px));
+        width: min(270px, calc(100vw - 34px));
       }
 
       .mic-core-center {
-        width: 102px;
-        height: 102px;
+        width: 156px;
+        height: 156px;
       }
 
       .mic-core-state {
-        font-size: 10px;
+        font-size: 11px;
         margin-bottom: 5px;
       }
 
       .mic-core-value {
-        font-size: 24px;
+        font-size: 34px;
       }
 
       .mic-core-subvalue {
-        font-size: 12px;
-        margin-top: 6px;
+        font-size: 16px;
+        margin-top: 7px;
       }
 
       .mic-core-mode {
@@ -4008,22 +4010,59 @@
     }
 
     function estimateMicCorePitch(buffer, sampleRate, rms) {
-      if (!sampleRate || rms < .012) return "--";
-      let crossings = 0;
-      let previous = buffer[0] - 128;
+      if (!sampleRate || !buffer || buffer.length < 96 || rms < .016) return "--";
 
-      for (let i = 1; i < buffer.length; i++) {
-        const current = buffer[i] - 128;
-        if ((previous < 0 && current >= 0) || (previous >= 0 && current < 0)) {
-          crossings += 1;
-        }
-        previous = current;
+      const length = buffer.length;
+      const signal = new Float32Array(length);
+      let mean = 0;
+
+      for (let i = 0; i < length; i++) {
+        mean += (buffer[i] - 128) / 128;
+      }
+      mean /= length;
+
+      let energy = 0;
+      for (let i = 0; i < length; i++) {
+        const value = (buffer[i] - 128) / 128 - mean;
+        signal[i] = value;
+        energy += value * value;
       }
 
-      const hz = clamp((crossings * sampleRate) / (2 * buffer.length), 45, 850);
-      if (!Number.isFinite(hz) || hz < 55) return "Low";
-      if (hz > 420) return "High";
-      return `${Math.round(hz)} Hz`;
+      if (energy < .004) return "--";
+
+      const minHz = 70;
+      const maxHz = 360;
+      const minLag = Math.max(2, Math.floor(sampleRate / maxHz));
+      const maxLag = Math.min(length - 8, Math.floor(sampleRate / minHz));
+      let bestLag = 0;
+      let bestScore = 0;
+
+      for (let lag = minLag; lag <= maxLag; lag++) {
+        let corr = 0;
+        let left = 0;
+        let right = 0;
+
+        for (let i = 0; i < length - lag; i++) {
+          const a = signal[i];
+          const b = signal[i + lag];
+          corr += a * b;
+          left += a * a;
+          right += b * b;
+        }
+
+        const score = corr / Math.sqrt(Math.max(1e-8, left * right));
+        if (score > bestScore) {
+          bestScore = score;
+          bestLag = lag;
+        }
+      }
+
+      if (!bestLag || bestScore < .34) return "--";
+      const hz = sampleRate / bestLag;
+      if (!Number.isFinite(hz)) return "--";
+      if (hz < 115) return `LOW ${Math.round(hz)}`;
+      if (hz > 210) return `HIGH ${Math.round(hz)}`;
+      return `MID ${Math.round(hz)}`;
     }
 
     function formatMicCoreTime(ms) {
@@ -4581,6 +4620,39 @@
               audioUnlockEl.currentTime = 0;
             } catch (_) {}
           }).catch(() => {});
+        }
+      } catch (_) {}
+
+      try {
+        if (!el.audioPlayer) return;
+        const currentSrc = el.audioPlayer.currentSrc || el.audioPlayer.src || "";
+        const currentTime = Number.isFinite(el.audioPlayer.currentTime) ? el.audioPlayer.currentTime : 0;
+        const wasMuted = el.audioPlayer.muted;
+        const wasVolume = el.audioPlayer.volume;
+        const silentSrc = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
+
+        el.audioPlayer.muted = true;
+        el.audioPlayer.volume = 0;
+        el.audioPlayer.setAttribute("playsinline", "");
+        if (!currentSrc) el.audioPlayer.src = silentSrc;
+
+        const playerPromise = el.audioPlayer.play();
+        if (playerPromise && typeof playerPromise.then === "function") {
+          playerPromise.then(() => {
+            try {
+              el.audioPlayer.pause();
+              if (currentSrc) {
+                el.audioPlayer.currentTime = currentTime;
+              }
+              el.audioPlayer.muted = wasMuted;
+              el.audioPlayer.volume = wasVolume;
+            } catch (_) {}
+          }).catch(() => {
+            try {
+              el.audioPlayer.muted = wasMuted;
+              el.audioPlayer.volume = wasVolume;
+            } catch (_) {}
+          });
         }
       } catch (_) {}
     }
