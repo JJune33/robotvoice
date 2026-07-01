@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.6 Simple UX</title>
+  <title>Robo Phonix v21.4 Simple UX</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -4491,8 +4491,8 @@
           processed = processExternalRobotFx(mono, sampleRate, preset);
         }
 
-        const levelMatched = matchAutoMicExportLevel(processed);
-        const int16 = floatToInt16(levelMatched);
+        const mastered = masterAutoMicResultLevel(processed);
+        const int16 = floatToInt16(mastered);
         updateVisualizerFromInt16(int16, sampleRate, isVocoder ? "Vocoder FX Auto Mic" : "Robot FX Auto Mic");
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
@@ -5749,35 +5749,76 @@
       return applyRobotFx(shaped.samples, shaped.sampleRate || sampleRate, externalFx);
     }
 
-    function matchAutoMicExportLevel(input) {
+    function masterAutoMicResultLevel(input) {
       if (!(input instanceof Float32Array) || !input.length) return input;
 
+      const first = measureActiveLevel(input);
+      if (first.peak < .001 || first.rms < .001) return input;
+
+      const ceiling = .985;
+      const targetRms = .26;
+      const maxGain = 3.6;
+      const gain = clamp(targetRms / first.rms, 1, maxGain);
+      let output = applyFixedGain(input, gain);
+      output = brickwallLimiter(output, ceiling);
+
+      const second = measureActiveLevel(output);
+      if (second.rms > .001 && second.rms < .20) {
+        const topUp = clamp(.22 / second.rms, 1, 1.55);
+        output = brickwallLimiter(applyFixedGain(output, topUp), ceiling);
+      }
+
+      return output;
+    }
+
+    function measureActiveLevel(input) {
       let peak = 0;
+      for (let i = 0; i < input.length; i++) {
+        const abs = Math.abs(input[i]);
+        if (abs > peak) peak = abs;
+      }
+
+      if (peak < .001) {
+        return { peak: 0, rms: 0 };
+      }
+
+      const floor = Math.max(.012, peak * .055);
       let sum = 0;
+      let count = 0;
+
       for (let i = 0; i < input.length; i++) {
         const value = input[i];
-        const abs = Math.abs(value);
-        if (abs > peak) peak = abs;
-        sum += value * value;
+        if (Math.abs(value) >= floor) {
+          sum += value * value;
+          count += 1;
+        }
       }
 
-      if (peak < .001) return input;
+      if (!count) {
+        for (let i = 0; i < input.length; i++) {
+          const value = input[i];
+          sum += value * value;
+        }
+        count = input.length;
+      }
 
-      const rms = Math.sqrt(sum / input.length);
-      const targetRms = .17;
-      const ceiling = .96;
-      const rmsGain = rms > .001 ? targetRms / rms : 1;
-      const peakGain = ceiling / peak;
-      const gain = clamp(Math.min(rmsGain, peakGain, 1.9), 1, 1.9);
+      return {
+        peak,
+        rms: Math.sqrt(sum / Math.max(1, count))
+      };
+    }
 
-      if (gain <= 1.01) return input;
-
+    function applyFixedGain(input, gain) {
       const output = new Float32Array(input.length);
+      const safeGain = Number.isFinite(gain) ? gain : 1;
       for (let i = 0; i < input.length; i++) {
-        output[i] = clamp(input[i] * gain, -ceiling, ceiling);
+        output[i] = input[i] * safeGain;
       }
+      return output;
+    }
 
-      return brickwallLimiter(output, ceiling);
+    function matchAutoMicExportLevel(input) {
+      return masterAutoMicResultLevel(input);
     }
 
     function buildExternalRobotFx(fx = {}, preset = {}) {
