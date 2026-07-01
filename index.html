@@ -3810,6 +3810,7 @@
         const wavUrl = URL.createObjectURL(wavBlob);
         currentUrls.push(mp3Url, wavUrl);
 
+        resetAudioPlayerPlaybackLevel();
         el.audioPlayer.src = mp3Url;
         el.downloadMp3.href = mp3Url;
         el.downloadWav.href = wavUrl;
@@ -4446,6 +4447,7 @@
         const wavUrl = URL.createObjectURL(wavBlob);
         currentUrls.push(mp3Url, wavUrl);
 
+        resetAudioPlayerPlaybackLevel();
         el.audioPlayer.src = mp3Url;
         el.downloadMp3.href = mp3Url;
         el.downloadWav.href = wavUrl;
@@ -4501,6 +4503,7 @@
         const wavUrl = URL.createObjectURL(wavBlob);
         currentUrls.push(mp3Url, wavUrl);
 
+        resetAudioPlayerPlaybackLevel();
         el.audioPlayer.src = mp3Url;
         el.downloadMp3.href = mp3Url;
         el.downloadWav.href = wavUrl;
@@ -4667,38 +4670,14 @@
           }).catch(() => {});
         }
       } catch (_) {}
+    }
 
+    function resetAudioPlayerPlaybackLevel() {
       try {
         if (!el.audioPlayer) return;
-        const currentSrc = el.audioPlayer.currentSrc || el.audioPlayer.src || "";
-        const currentTime = Number.isFinite(el.audioPlayer.currentTime) ? el.audioPlayer.currentTime : 0;
-        const wasMuted = el.audioPlayer.muted;
-        const wasVolume = el.audioPlayer.volume;
-        const silentSrc = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
-
-        el.audioPlayer.muted = true;
-        el.audioPlayer.volume = 0;
+        el.audioPlayer.muted = false;
+        el.audioPlayer.volume = 1;
         el.audioPlayer.setAttribute("playsinline", "");
-        if (!currentSrc) el.audioPlayer.src = silentSrc;
-
-        const playerPromise = el.audioPlayer.play();
-        if (playerPromise && typeof playerPromise.then === "function") {
-          playerPromise.then(() => {
-            try {
-              el.audioPlayer.pause();
-              if (currentSrc) {
-                el.audioPlayer.currentTime = currentTime;
-              }
-              el.audioPlayer.muted = wasMuted;
-              el.audioPlayer.volume = wasVolume;
-            } catch (_) {}
-          }).catch(() => {
-            try {
-              el.audioPlayer.muted = wasMuted;
-              el.audioPlayer.volume = wasVolume;
-            } catch (_) {}
-          });
-        }
       } catch (_) {}
     }
 
@@ -4989,6 +4968,7 @@
       try {
         autoMicPausedForPlayback = true;
         updateAutoMicUi("playing");
+        resetAudioPlayerPlaybackLevel();
         el.audioPlayer.currentTime = 0;
         const playPromise = el.audioPlayer.play();
         if (playPromise && typeof playPromise.then === "function") {
@@ -5639,6 +5619,7 @@
         const wavUrl = URL.createObjectURL(wavBlob);
         currentUrls.push(mp3Url, wavUrl);
 
+        resetAudioPlayerPlaybackLevel();
         el.audioPlayer.src = mp3Url;
         el.downloadMp3.href = mp3Url;
         el.downloadWav.href = wavUrl;
