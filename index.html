@@ -1370,19 +1370,19 @@
       left: 50%;
       top: 50%;
       z-index: 72;
-      width: min(230px, calc(100vw - 54px));
+      width: min(260px, calc(100vw - 46px));
       aspect-ratio: 1;
-      color: #ffffff;
+      color: #050505;
       background: transparent;
       border: 0;
       box-shadow: none;
       pointer-events: none;
-      transform: translate(-50%, -50%) scale(.92);
+      transform: translate(-50%, -50%) scale(.9);
       opacity: 0;
       transition: opacity .16s ease, transform .16s ease;
       filter:
-        drop-shadow(0 0 24px rgba(255,0,174,.34))
-        drop-shadow(0 0 22px rgba(193,255,26,.22));
+        drop-shadow(0 0 30px rgba(255,0,174,.38))
+        drop-shadow(0 0 26px rgba(193,255,26,.28));
     }
 
     .mic-core-hud.is-active {
@@ -1411,59 +1411,55 @@
       transform: translate(-50%, -50%);
       display: grid;
       place-items: center;
-      min-width: 76px;
-      height: 76px;
-      padding: 0 13px;
+      align-content: center;
+      width: 118px;
+      height: 118px;
       border-radius: 999px;
-      color: #ffffff;
       text-align: center;
-      background: rgba(5,5,5,.42);
-      border: 1px solid rgba(255,255,255,.18);
-      backdrop-filter: blur(8px);
+      color: #050505;
+      background: rgba(255,255,255,.52);
+      border: 1px solid rgba(255,255,255,.68);
+      box-shadow:
+        0 0 34px rgba(255,255,255,.24),
+        inset 0 1px 0 rgba(255,255,255,.72);
+      backdrop-filter: blur(10px);
     }
 
     .mic-core-state {
       font-family: Orbitron, Inter, sans-serif;
       font-size: 11px;
-      font-weight: 900;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      text-shadow: 0 2px 12px rgba(0,0,0,.46);
-    }
-
-    .mic-core-chip {
-      position: absolute;
-      min-width: 68px;
-      padding: 5px 8px;
-      border-radius: 999px;
-      color: #ffffff;
-      background: rgba(5,5,5,.28);
-      border: 1px solid rgba(255,255,255,.16);
-      backdrop-filter: blur(6px);
-      font-size: 9px;
       font-weight: 1000;
-      letter-spacing: .05em;
-      text-align: center;
-      white-space: nowrap;
-      text-shadow: 0 2px 10px rgba(0,0,0,.38);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(5,5,5,.72);
+      line-height: 1;
+      margin-bottom: 6px;
     }
 
-    .mic-core-level {
-      left: 2px;
-      top: 50%;
-      transform: translateY(-50%);
+    .mic-core-value {
+      display: block;
+      font-family: Orbitron, Inter, sans-serif;
+      font-size: 27px;
+      line-height: .95;
+      font-weight: 1000;
+      letter-spacing: -.05em;
+      color: #050505;
     }
 
-    .mic-core-pitch {
-      right: 2px;
-      top: 50%;
-      transform: translateY(-50%);
+    .mic-core-subvalue {
+      display: block;
+      margin-top: 7px;
+      font-size: 14px;
+      line-height: 1;
+      font-weight: 1000;
+      letter-spacing: -.02em;
+      color: rgba(5,5,5,.78);
     }
 
     .mic-core-mode {
       position: absolute;
       left: 50%;
-      bottom: 20px;
+      bottom: 22px;
       transform: translateX(-50%);
       color: #050505;
       background: linear-gradient(180deg, #d6ff68 0%, #c1ff1a 100%);
@@ -1477,30 +1473,30 @@
 
     @media (max-width: 560px) {
       .mic-core-hud {
-        width: min(186px, calc(100vw - 46px));
+        width: min(218px, calc(100vw - 42px));
       }
 
       .mic-core-center {
-        min-width: 66px;
-        height: 66px;
+        width: 102px;
+        height: 102px;
       }
 
-      .mic-core-chip {
-        min-width: 58px;
-        padding: 4px 7px;
-        font-size: 8px;
+      .mic-core-state {
+        font-size: 10px;
+        margin-bottom: 5px;
       }
 
-      .mic-core-level {
-        left: -1px;
+      .mic-core-value {
+        font-size: 24px;
       }
 
-      .mic-core-pitch {
-        right: -1px;
+      .mic-core-subvalue {
+        font-size: 12px;
+        margin-top: 6px;
       }
 
       .mic-core-mode {
-        bottom: 14px;
+        bottom: 16px;
       }
     }
 
@@ -1575,10 +1571,12 @@
 
     <div id="micCoreHud" class="mic-core-hud" hidden aria-live="polite">
       <div class="mic-core-stage" aria-hidden="true">
-        <canvas id="micCoreCanvas" class="mic-core-canvas" width="230" height="230"></canvas>
-        <div class="mic-core-center"><span id="micCoreState" class="mic-core-state">REC</span></div>
-        <span id="micCoreLevel" class="mic-core-chip mic-core-level">VOL 0%</span>
-        <span id="micCorePitch" class="mic-core-chip mic-core-pitch">PITCH --</span>
+        <canvas id="micCoreCanvas" class="mic-core-canvas" width="260" height="260"></canvas>
+        <div class="mic-core-center">
+          <span id="micCoreState" class="mic-core-state">REC</span>
+          <strong id="micCoreLevel" class="mic-core-value">0%</strong>
+          <small id="micCorePitch" class="mic-core-subvalue">--</small>
+        </div>
         <span id="micCoreMode" class="mic-core-mode">Robot FX</span>
       </div>
     </div>
@@ -2846,6 +2844,7 @@
       meta: "Waiting for output"
     };
     let visualizerFrameId = null;
+    let audioUnlockEl = null;
 
     function init() {
       customVoiceRecipes = loadCustomVoiceRecipes();
@@ -3954,8 +3953,8 @@
       el.micCoreHud.hidden = false;
       el.micCoreMode.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
       el.micCoreState.textContent = formatMicCoreState(state);
-      if (el.micCoreLevel) el.micCoreLevel.textContent = "VOL 0%";
-      if (el.micCorePitch) el.micCorePitch.textContent = "PITCH --";
+      if (el.micCoreLevel) el.micCoreLevel.textContent = "0%";
+      if (el.micCorePitch) el.micCorePitch.textContent = "--";
       requestAnimationFrame(() => el.micCoreHud.classList.add("is-active"));
     }
 
@@ -3980,22 +3979,22 @@
       }
 
       const rms = Math.sqrt(sum / Math.max(1, buffer.length / 2));
-      const level = clamp(rms * 430, 0, 100);
+      const level = clamp(Math.pow(clamp(rms * 10.5, 0, 1.4), .7) * 100, 0, 100);
       micCorePitchFrame += 1;
       if (micCorePitchFrame % 6 === 0) {
         micCoreLastPitch = estimateMicCorePitch(buffer, sampleRate, rms);
       }
       el.micCoreMode.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
       el.micCoreState.textContent = formatMicCoreState(state);
-      if (el.micCoreLevel) el.micCoreLevel.textContent = `VOL ${Math.round(level)}%`;
-      if (el.micCorePitch) el.micCorePitch.textContent = `PITCH ${micCoreLastPitch}`;
+      if (el.micCoreLevel) el.micCoreLevel.textContent = `${Math.round(level)}%`;
+      if (el.micCorePitch) el.micCorePitch.textContent = micCoreLastPitch;
       drawMicCoreCanvas(buffer, level, state);
     }
 
     function updateMicCoreStatic(state, startedAt = 0, level = 0) {
       showMicCore(state);
-      if (el.micCoreLevel) el.micCoreLevel.textContent = level > 0 ? `VOL ${Math.round(level)}%` : "VOL --";
-      if (el.micCorePitch) el.micCorePitch.textContent = "PITCH --";
+      if (el.micCoreLevel) el.micCoreLevel.textContent = level > 0 ? `${Math.round(level)}%` : "--";
+      if (el.micCorePitch) el.micCorePitch.textContent = "--";
       drawMicCoreCanvas(null, level, state);
     }
 
@@ -4052,15 +4051,15 @@
       const height = size / dpr;
       const cx = width / 2;
       const cy = height / 2;
-      const radius = Math.min(width, height) * .36;
+      const radius = Math.min(width, height) * .34;
       const pulse = clamp(level / 100, 0, 1);
-      const visualPulse = Math.pow(pulse, .62);
+      const visualPulse = Math.pow(pulse, .5);
 
       ctx.clearRect(0, 0, width, height);
 
       const glow = ctx.createRadialGradient(cx, cy, radius * .1, cx, cy, radius * (1.45 + visualPulse * .25));
-      glow.addColorStop(0, "rgba(255,255,255,.16)");
-      glow.addColorStop(.55, "rgba(255,0,174,.16)");
+      glow.addColorStop(0, "rgba(255,255,255,.22)");
+      glow.addColorStop(.55, "rgba(255,0,174,.2)");
       glow.addColorStop(1, "rgba(193,255,26,.02)");
       ctx.fillStyle = glow;
       ctx.beginPath();
@@ -4096,7 +4095,7 @@
           const index = Math.min(buffer.length - 1, Math.floor((i / points) * buffer.length));
           sample = (buffer[index] - 128) / 128;
         }
-        const dynamicRadius = radius + sample * (16 + visualPulse * 42) + visualPulse * 12;
+        const dynamicRadius = radius + sample * (24 + visualPulse * 58) + visualPulse * 18;
         const x = cx + Math.cos(angle) * dynamicRadius;
         const y = cy + Math.sin(angle) * dynamicRadius;
         if (i === 0) ctx.moveTo(x, y);
@@ -4109,7 +4108,7 @@
 
       ctx.save();
       ctx.strokeStyle = "rgba(193,255,26,.8)";
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 5;
       ctx.lineCap = "round";
       ctx.beginPath();
       ctx.arc(cx, cy, radius * (1.2 + visualPulse * .08), -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * visualPulse);
@@ -4564,8 +4563,31 @@
       }
     }
 
+    function primeAutoMicPlaybackUnlock() {
+      try {
+        if (!audioUnlockEl) {
+          audioUnlockEl = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
+          audioUnlockEl.preload = "auto";
+          audioUnlockEl.muted = true;
+          audioUnlockEl.volume = 0;
+          audioUnlockEl.setAttribute("playsinline", "");
+        }
+
+        const playPromise = audioUnlockEl.play();
+        if (playPromise && typeof playPromise.then === "function") {
+          playPromise.then(() => {
+            try {
+              audioUnlockEl.pause();
+              audioUnlockEl.currentTime = 0;
+            } catch (_) {}
+          }).catch(() => {});
+        }
+      } catch (_) {}
+    }
+
     async function startAutoMic() {
       try {
+        primeAutoMicPlaybackUnlock();
         if (autoMicActive) return;
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
           throw new Error("Stop the manual recorder before starting Auto Mic.");
