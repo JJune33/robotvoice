@@ -1431,6 +1431,35 @@
       text-shadow: 0 2px 12px rgba(0,0,0,.46);
     }
 
+    .mic-core-chip {
+      position: absolute;
+      min-width: 68px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: rgba(5,5,5,.28);
+      border: 1px solid rgba(255,255,255,.16);
+      backdrop-filter: blur(6px);
+      font-size: 9px;
+      font-weight: 1000;
+      letter-spacing: .05em;
+      text-align: center;
+      white-space: nowrap;
+      text-shadow: 0 2px 10px rgba(0,0,0,.38);
+    }
+
+    .mic-core-level {
+      left: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .mic-core-pitch {
+      right: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
     .mic-core-mode {
       position: absolute;
       left: 50%;
@@ -1454,6 +1483,20 @@
       .mic-core-center {
         min-width: 66px;
         height: 66px;
+      }
+
+      .mic-core-chip {
+        min-width: 58px;
+        padding: 4px 7px;
+        font-size: 8px;
+      }
+
+      .mic-core-level {
+        left: -1px;
+      }
+
+      .mic-core-pitch {
+        right: -1px;
       }
 
       .mic-core-mode {
@@ -1534,6 +1577,8 @@
       <div class="mic-core-stage" aria-hidden="true">
         <canvas id="micCoreCanvas" class="mic-core-canvas" width="230" height="230"></canvas>
         <div class="mic-core-center"><span id="micCoreState" class="mic-core-state">REC</span></div>
+        <span id="micCoreLevel" class="mic-core-chip mic-core-level">VOL 0%</span>
+        <span id="micCorePitch" class="mic-core-chip mic-core-pitch">PITCH --</span>
         <span id="micCoreMode" class="mic-core-mode">Robot FX</span>
       </div>
     </div>
@@ -2761,6 +2806,7 @@
     let manualMicSource = null;
     let manualMicAnalyser = null;
     let manualMicBuffer = null;
+    let manualMicCoreToken = 0;
     let micCoreFrameId = null;
     let micCoreStartedAt = 0;
     let micCoreLastPitch = "--";
@@ -3875,6 +3921,7 @@
     }
 
     function stopManualMicCore(hide = true) {
+      manualMicCoreToken += 1;
       if (micCoreFrameId) {
         cancelAnimationFrame(micCoreFrameId);
         micCoreFrameId = null;
@@ -3907,6 +3954,8 @@
       el.micCoreHud.hidden = false;
       el.micCoreMode.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
       el.micCoreState.textContent = formatMicCoreState(state);
+      if (el.micCoreLevel) el.micCoreLevel.textContent = "VOL 0%";
+      if (el.micCorePitch) el.micCorePitch.textContent = "PITCH --";
       requestAnimationFrame(() => el.micCoreHud.classList.add("is-active"));
     }
 
@@ -3931,14 +3980,22 @@
       }
 
       const rms = Math.sqrt(sum / Math.max(1, buffer.length / 2));
-      const level = clamp(rms * 260, 0, 100);
+      const level = clamp(rms * 430, 0, 100);
+      micCorePitchFrame += 1;
+      if (micCorePitchFrame % 6 === 0) {
+        micCoreLastPitch = estimateMicCorePitch(buffer, sampleRate, rms);
+      }
       el.micCoreMode.textContent = engineMode === "vocoder" ? "Vocoder FX" : "Robot FX";
       el.micCoreState.textContent = formatMicCoreState(state);
+      if (el.micCoreLevel) el.micCoreLevel.textContent = `VOL ${Math.round(level)}%`;
+      if (el.micCorePitch) el.micCorePitch.textContent = `PITCH ${micCoreLastPitch}`;
       drawMicCoreCanvas(buffer, level, state);
     }
 
     function updateMicCoreStatic(state, startedAt = 0, level = 0) {
       showMicCore(state);
+      if (el.micCoreLevel) el.micCoreLevel.textContent = level > 0 ? `VOL ${Math.round(level)}%` : "VOL --";
+      if (el.micCorePitch) el.micCorePitch.textContent = "PITCH --";
       drawMicCoreCanvas(null, level, state);
     }
 
@@ -3997,16 +4054,17 @@
       const cy = height / 2;
       const radius = Math.min(width, height) * .36;
       const pulse = clamp(level / 100, 0, 1);
+      const visualPulse = Math.pow(pulse, .62);
 
       ctx.clearRect(0, 0, width, height);
 
-      const glow = ctx.createRadialGradient(cx, cy, radius * .1, cx, cy, radius * 1.55);
+      const glow = ctx.createRadialGradient(cx, cy, radius * .1, cx, cy, radius * (1.45 + visualPulse * .25));
       glow.addColorStop(0, "rgba(255,255,255,.16)");
       glow.addColorStop(.55, "rgba(255,0,174,.16)");
       glow.addColorStop(1, "rgba(193,255,26,.02)");
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(cx, cy, radius * 1.55, 0, Math.PI * 2);
+      ctx.arc(cx, cy, radius * (1.48 + visualPulse * .28), 0, Math.PI * 2);
       ctx.fill();
 
       ctx.save();
@@ -4038,7 +4096,7 @@
           const index = Math.min(buffer.length - 1, Math.floor((i / points) * buffer.length));
           sample = (buffer[index] - 128) / 128;
         }
-        const dynamicRadius = radius + sample * (10 + pulse * 26) + pulse * 8;
+        const dynamicRadius = radius + sample * (16 + visualPulse * 42) + visualPulse * 12;
         const x = cx + Math.cos(angle) * dynamicRadius;
         const y = cy + Math.sin(angle) * dynamicRadius;
         if (i === 0) ctx.moveTo(x, y);
@@ -4054,7 +4112,7 @@
       ctx.lineWidth = 4;
       ctx.lineCap = "round";
       ctx.beginPath();
-      ctx.arc(cx, cy, radius * 1.22, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pulse);
+      ctx.arc(cx, cy, radius * (1.2 + visualPulse * .08), -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * visualPulse);
       ctx.stroke();
       ctx.restore();
     }
@@ -4086,7 +4144,13 @@
 
         mediaRecorder.start();
         recordingStartedAt = Date.now();
-        requestAnimationFrame(() => startManualMicCore(recordingStream));
+        const coreStream = recordingStream;
+        const coreToken = ++manualMicCoreToken;
+        requestAnimationFrame(() => {
+          if (coreToken === manualMicCoreToken && mediaRecorder && mediaRecorder.state === "recording" && recordingStream === coreStream) {
+            startManualMicCore(coreStream);
+          }
+        });
         startRecordingTimer();
 
         el.micRecordDisplay.classList.add("is-recording");
@@ -4124,6 +4188,7 @@
         el.processRecordingBtn.disabled = true;
         el.clearRecordingBtn.disabled = true;
         el.micRecordDisplay.classList.remove("is-recording");
+        if (!autoMicActive && !autoMicRendering && !autoMicPausedForPlayback) hideMicCore();
         return;
       }
 
@@ -4138,6 +4203,7 @@
       el.processRecordingBtn.disabled = false;
       el.clearRecordingBtn.disabled = false;
       el.micRecordDisplay.classList.remove("is-recording");
+      if (!autoMicActive && !autoMicRendering && !autoMicPausedForPlayback) hideMicCore();
 
       setStatus(engineMode === "vocoder"
         ? "<strong>Recording ready.</strong> Choose or tweak a vocoder preset and click Vocode."
