@@ -4491,7 +4491,8 @@
           processed = processExternalRobotFx(mono, sampleRate, preset);
         }
 
-        const int16 = floatToInt16(processed);
+        const levelMatched = matchAutoMicExportLevel(processed);
+        const int16 = floatToInt16(levelMatched);
         updateVisualizerFromInt16(int16, sampleRate, isVocoder ? "Vocoder FX Auto Mic" : "Robot FX Auto Mic");
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
@@ -5746,6 +5747,37 @@
       const shaped = applyExternalPresetShaping(input, sampleRate, preset);
       const externalFx = buildExternalRobotFx(preset?.fx || {}, preset || {});
       return applyRobotFx(shaped.samples, shaped.sampleRate || sampleRate, externalFx);
+    }
+
+    function matchAutoMicExportLevel(input) {
+      if (!(input instanceof Float32Array) || !input.length) return input;
+
+      let peak = 0;
+      let sum = 0;
+      for (let i = 0; i < input.length; i++) {
+        const value = input[i];
+        const abs = Math.abs(value);
+        if (abs > peak) peak = abs;
+        sum += value * value;
+      }
+
+      if (peak < .001) return input;
+
+      const rms = Math.sqrt(sum / input.length);
+      const targetRms = .17;
+      const ceiling = .96;
+      const rmsGain = rms > .001 ? targetRms / rms : 1;
+      const peakGain = ceiling / peak;
+      const gain = clamp(Math.min(rmsGain, peakGain, 1.9), 1, 1.9);
+
+      if (gain <= 1.01) return input;
+
+      const output = new Float32Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        output[i] = clamp(input[i] * gain, -ceiling, ceiling);
+      }
+
+      return brickwallLimiter(output, ceiling);
     }
 
     function buildExternalRobotFx(fx = {}, preset = {}) {
