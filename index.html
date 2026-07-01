@@ -5785,21 +5785,21 @@
       return {
         ...fx,
         ringFreq: Number(fx.ringFreq) || ringFreqFallback,
-        ringDepth: clamp(baseRingDepth * 2.15 + .14, .22, .86),
-        bitDepth: clampInt(baseBitDepth - 2, 4, 9),
+        ringDepth: clamp(baseRingDepth * 1.38 + .055, .1, .62),
+        bitDepth: clampInt(baseBitDepth - 1, 5, 11),
         echoMs: Number(fx.echoMs) || (isDeepPreset ? 95 : 62),
-        echoFeedback: clamp((Number(fx.echoFeedback) || 0) * 1.35 + .035, .055, .28),
+        echoFeedback: clamp((Number(fx.echoFeedback) || 0) * 1.08 + .018, .025, .22),
         highpass: clamp(highpass, 55, 320),
-        lowpass: clamp(lowpass * (isBrightPreset ? 1.08 : 1), 1800, 5200),
-        formant: clamp(Number(fx.formant) || 0, -.46, .46),
+        lowpass: clamp(lowpass * (isBrightPreset ? 1.04 : 1), 1800, 5200),
+        formant: clamp(Number(fx.formant) || 0, -.42, .42),
         combMs: clamp(baseCombMs, 3, 18),
-        combMix: clamp(baseCombMix * 1.85 + .12, .18, .52),
-        combFeedback: clamp(Number(fx.combFeedback) || (isDeepPreset ? .08 : .05), 0, .22),
-        noise: clamp(baseNoise * 1.45 + .006, .01, .07),
+        combMix: clamp(baseCombMix * 1.18 + .045, .06, .34),
+        combFeedback: clamp(Number(fx.combFeedback) || (isDeepPreset ? .055 : .035), 0, .18),
+        noise: clamp(baseNoise * 1.05 + .0025, .003, .045),
         wobbleFreq: Number(fx.wobbleFreq) || (isDeepPreset ? .28 : .55),
-        wobbleDepth: clamp((Number(fx.wobbleDepth) || 0) * 1.4 + .006, .01, .075),
-        drive: clamp(baseDrive * 1.12 + .08, 1.16, 1.62),
-        ceiling: clamp(Number(fx.ceiling) || .95, .88, .97)
+        wobbleDepth: clamp((Number(fx.wobbleDepth) || 0) * 1.08 + .0025, .004, .052),
+        drive: clamp(baseDrive * 1.035 + .025, .98, 1.36),
+        ceiling: clamp(Number(fx.ceiling) || .92, .86, .94)
       };
     }
 
@@ -5809,20 +5809,20 @@
       const speed = clampInt(preset?.speed ?? 140, 80, 260);
       const isDeepPreset = pitch < 24 || speed < 112 || Number(fx.formant || 0) < -.28;
       const carrierFreq = Number(fx.ringFreq) || (isDeepPreset ? 38 : pitch > 54 ? 72 : 52);
-      const depth = clamp((Number(fx.ringDepth) || 0) * .42 + .18, .16, .5);
-      const quantize = isDeepPreset ? 9 : 13;
+      const depth = clamp((Number(fx.ringDepth) || 0) * .18 + .055, .045, .22);
+      const quantize = isDeepPreset ? 18 : 24;
       const output = new Float32Array(input.length);
       let envelope = 0;
 
       for (let i = 0; i < input.length; i++) {
         const t = i / sampleRate;
         const x = input[i];
-        envelope = envelope * .986 + Math.abs(x) * .014;
+        envelope = envelope * .99 + Math.abs(x) * .01;
         const square = Math.sign(Math.sin(2 * Math.PI * carrierFreq * t)) || 1;
         const stepped = Math.round(x * quantize) / quantize;
-        const carrierGate = .72 + square * .28;
-        const synthetic = stepped * .55 + x * carrierGate * .45;
-        output[i] = clamp(x * (1 - depth) + synthetic * depth + envelope * square * depth * .045, -1, 1);
+        const carrierGate = .86 + square * .14;
+        const synthetic = stepped * .32 + x * carrierGate * .68;
+        output[i] = clamp(x * (1 - depth) + synthetic * depth + envelope * square * depth * .018, -1, 1);
       }
 
       return output;
@@ -5834,12 +5834,12 @@
       const pitch = clampInt(preset.pitch ?? basePitch, 0, 99);
       const amp = clampInt(preset.amp ?? baseAmp, 20, 200);
       const pitchShape = clamp((pitch - basePitch) / 90, -.52, .52);
-      const gain = clamp(amp / baseAmp, .15, 2.2);
+      const gain = clamp(amp / baseAmp, .45, 1.35);
 
-      let output = normalize(input, .82);
+      let output = new Float32Array(input);
 
       if (Math.abs(pitchShape) > .025) {
-        output = formantShape(output, sampleRate, pitchShape * .48);
+        output = formantShape(output, sampleRate, pitchShape * .26);
       }
 
       output = addExternalRobotExciter(output, sampleRate, preset);
