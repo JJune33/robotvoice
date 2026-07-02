@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v22.0 iOS Audio Session Volume Fix</title>
+  <title>Robo Phonix v22.1 Real Player Gain Fix</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -4838,11 +4838,53 @@
     }
 
     function ensurePlaybackGainGraph(allowResume = false) {
-      return false;
+      try {
+        if (!el.audioPlayer) return false;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return false;
+
+        if (!playbackAudioContext) {
+          playbackAudioContext = new AudioContextClass();
+        }
+
+        if (!playbackSourceNode) {
+          playbackSourceNode = playbackAudioContext.createMediaElementSource(el.audioPlayer);
+          playbackGainNode = playbackAudioContext.createGain();
+          playbackSourceNode.connect(playbackGainNode);
+          playbackGainNode.connect(playbackAudioContext.destination);
+        }
+
+        if (allowResume && playbackAudioContext.state === "suspended") {
+          playbackAudioContext.resume().catch(() => {});
+        }
+
+        return !!playbackGainNode;
+      } catch (error) {
+        console.error(error);
+        return false;
+      }
     }
 
     function applyPlaybackVolume(allowAudioGraphResume = false) {
       resetAudioPlayerPlaybackLevel();
+      const gain = clamp(getPlaybackVolumePercent() / 100, 0, 5);
+
+      if (ensurePlaybackGainGraph(allowAudioGraphResume)) {
+        try {
+          playbackGainNode.gain.setTargetAtTime(gain, playbackAudioContext.currentTime, .015);
+          return;
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      try {
+        if (el.audioPlayer) {
+          el.audioPlayer.volume = Math.min(1, gain);
+        }
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     function resetAudioPlayerPlaybackLevel() {
@@ -4851,6 +4893,10 @@
         el.audioPlayer.muted = false;
         el.audioPlayer.volume = 1;
         el.audioPlayer.setAttribute("playsinline", "");
+        if (playbackGainNode && playbackAudioContext) {
+          const gain = clamp(getPlaybackVolumePercent() / 100, 0, 5);
+          playbackGainNode.gain.setTargetAtTime(gain, playbackAudioContext.currentTime, .015);
+        }
       } catch (error) {
         console.error(error);
       }
