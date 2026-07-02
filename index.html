@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v22.3 Real Output Gain</title>
+  <title>Robo Phonix v22.4 Export Loudness Maximizer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -4723,7 +4723,8 @@
     }
 
     function applyOutputVolumeToInt16(source) {
-      const gain = clamp(getPlaybackVolumePercent() / 100, 0, 5);
+      const percent = getPlaybackVolumePercent();
+      const gain = clamp(percent / 100, 0, 5);
       if (!(source instanceof Int16Array) || !source.length) return source;
 
       const float = new Float32Array(source.length);
@@ -4732,38 +4733,116 @@
       }
 
       if (Math.abs(gain - 1) < .001) {
-        return floatToInt16(float);
+        return cloneInt16Array(source);
       }
 
       if (gain < 1) {
         return floatToInt16(applyFixedGain(float, gain));
       }
 
-      return floatToInt16(applyOutputLoudnessBoost(float, gain));
+      return floatToInt16(applyExportLoudnessMaximizer(float, gain));
     }
 
-    function applyOutputLoudnessBoost(input, gain) {
+    function applyExportLoudnessMaximizer(input, gain) {
       if (!(input instanceof Float32Array) || !input.length) return input;
 
       const g = clamp(Number(gain) || 1, 1, 5);
-      const output = new Float32Array(input.length);
-
       if (g <= 1.001) {
-        output.set(input);
-        return output;
+        const copy = new Float32Array(input.length);
+        copy.set(input);
+        return copy;
       }
 
-      // Real output gain for the encoded MP3/WAV itself.
-      // Above 100% this intentionally increases loudness with soft saturation,
-      // instead of normalizing the result back down.
-      const drive = g;
-      const saturation = 1.35;
+      const before = measureActiveLevel(input);
+      if (before.peak < .001 || before.rms < .001) {
+        const silent = new Float32Array(input.length);
+        silent.set(input);
+        return silent;
+      }
+
+      // Export-only loudness maximizer.
+      // This is intentionally not a player gain and not part of Robot FX/Vocoder/TTS processing.
+      // The slider maps to a higher active RMS target, then a lookahead limiter catches peaks.
       const ceiling = .985;
+      const requestedRms = before.rms * g;
+      const targetRms = clamp(requestedRms, before.rms, .54);
+      const makeup = clamp(targetRms / Math.max(.001, before.rms), 1, 8);
+
+      let driven = applyFixedGain(input, makeup);
+      driven = applyVoiceSafeCompressor(driven, .32, 5.5, .82);
+      driven = applyLookaheadLimiter(driven, ceiling, 384, .0045, .055);
+
+      const after = measureActiveLevel(driven);
+      if (after.rms > .001 && after.rms < targetRms * .82) {
+        const topUp = clamp(targetRms / after.rms, 1, 2.35);
+        driven = applyLookaheadLimiter(applyFixedGain(driven, topUp), ceiling, 384, .0045, .06);
+      }
+
+      return driven;
+    }
+
+    function applyVoiceSafeCompressor(input, threshold = .32, ratio = 5.5, knee = .82) {
+      const output = new Float32Array(input.length);
+      const t = clamp(threshold, .08, .9);
+      const r = clamp(ratio, 1, 20);
+      const k = clamp(knee, .1, 1.5);
 
       for (let i = 0; i < input.length; i++) {
-        const x = input[i] * drive;
-        const y = Math.tanh(x * saturation);
-        output[i] = clamp(y, -ceiling, ceiling);
+        const x = input[i];
+        const sign = x < 0 ? -1 : 1;
+        const ax = Math.abs(x);
+
+        if (ax <= t) {
+          output[i] = x;
+          continue;
+        }
+
+        const over = ax - t;
+        const compressed = t + over / r;
+        const soft = Math.tanh(compressed * k) / Math.tanh(k);
+        output[i] = sign * clamp(soft, 0, .995);
+      }
+
+      return output;
+    }
+
+    function applyLookaheadLimiter(input, ceiling = .985, lookahead = 384, attack = .0045, release = .055) {
+      const length = input.length;
+      const output = new Float32Array(length);
+      const c = clamp(ceiling, .5, .995);
+      const look = clampInt(lookahead, 0, 4096);
+      const deque = [];
+      let head = 0;
+      let currentGain = 1;
+      const attackCoeff = clamp(attack, .001, .5);
+      const releaseCoeff = clamp(release, .001, .5);
+
+      for (let i = 0; i < length + look; i++) {
+        if (i < length) {
+          while (deque.length > head && Math.abs(input[deque[deque.length - 1]]) <= Math.abs(input[i])) {
+            deque.pop();
+          }
+          deque.push(i);
+        }
+
+        const outIndex = i - look;
+        if (outIndex < 0) continue;
+
+        while (head < deque.length && deque[head] < outIndex) head += 1;
+        if (head > 64) {
+          deque.splice(0, head);
+          head = 0;
+        }
+
+        const peak = head < deque.length ? Math.abs(input[deque[head]]) : Math.abs(input[outIndex]);
+        const neededGain = peak > c ? c / peak : 1;
+        if (neededGain < currentGain) {
+          currentGain += (neededGain - currentGain) * attackCoeff;
+        } else {
+          currentGain += (neededGain - currentGain) * releaseCoeff;
+        }
+
+        output[outIndex] = clamp(input[outIndex] * currentGain, -c, c);
       }
 
       return output;
