@@ -1942,14 +1942,14 @@
         <div class="card-body">
           <audio id="audioPlayer" controls></audio>
 
-          <div class="playback-volume-lab" aria-label="Playback volume">
+          <div class="playback-volume-lab" aria-label="Output volume">
             <div class="playback-volume-head">
-              <span>Playback Volume</span>
+              <span>Output Volume</span>
               <small id="playbackVolumeReadout">100%</small>
             </div>
             <div class="playback-volume-row">
-              <input id="playbackVolume" type="range" min="0" max="200" step="1" value="100">
-              <input id="playbackVolumeNum" type="number" min="0" max="200" step="1" value="100">
+              <input id="playbackVolume" type="range" min="0" max="500" step="1" value="100">
+              <input id="playbackVolumeNum" type="number" min="0" max="500" step="1" value="100">
             </div>
           </div>
 
@@ -2916,6 +2916,8 @@
     let playbackAudioContext = null;
     let playbackSourceNode = null;
     let playbackGainNode = null;
+    let currentOutputSource = null;
+    let outputVolumeRenderTimer = null;
 
     function init() {
       customVoiceRecipes = loadCustomVoiceRecipes();
@@ -2997,7 +2999,7 @@
       setPlaybackVolume(100, false);
 
       el.audioPlayer.addEventListener("play", () => {
-        applyPlaybackVolume(false);
+        applyPlaybackVolume(true);
         startVisualizerPlayback();
       });
       el.audioPlayer.addEventListener("pause", drawCurrentVisualizer);
@@ -3876,21 +3878,7 @@
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
 
-        const wavBlob = encodeWavMono(int16, decoded.sampleRate);
-        const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
-
-        const mp3Url = URL.createObjectURL(mp3Blob);
-        const wavUrl = URL.createObjectURL(wavBlob);
-        currentUrls.push(mp3Url, wavUrl);
-
-        resetAudioPlayerPlaybackLevel();
-        el.audioPlayer.src = mp3Url;
-        el.downloadMp3.href = mp3Url;
-        el.downloadWav.href = wavUrl;
-        el.downloadMp3.download = makeAudioRobotizerFileName("mp3");
-        el.downloadWav.download = makeAudioRobotizerFileName("wav");
-        el.downloadMp3.classList.remove("disabled");
-        el.downloadWav.classList.remove("disabled");
+        publishEncodedOutput(int16, decoded.sampleRate, kbps, makeAudioRobotizerFileName("mp3"), makeAudioRobotizerFileName("wav"));
 
         const seconds = (int16.length / decoded.sampleRate).toFixed(1);
         setStatus(`<strong>Ready.</strong> ${isVocoder ? "Vocoded" : "Robotized"} audio: ${seconds} sec · MP3 ${kbps} kbps.`);
@@ -4513,21 +4501,7 @@
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
 
-        const wavBlob = encodeWavMono(int16, decoded.sampleRate);
-        const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
-
-        const mp3Url = URL.createObjectURL(mp3Blob);
-        const wavUrl = URL.createObjectURL(wavBlob);
-        currentUrls.push(mp3Url, wavUrl);
-
-        resetAudioPlayerPlaybackLevel();
-        el.audioPlayer.src = mp3Url;
-        el.downloadMp3.href = mp3Url;
-        el.downloadWav.href = wavUrl;
-        el.downloadMp3.download = makeRecordingRobotizerFileName("mp3");
-        el.downloadWav.download = makeRecordingRobotizerFileName("wav");
-        el.downloadMp3.classList.remove("disabled");
-        el.downloadWav.classList.remove("disabled");
+        publishEncodedOutput(int16, decoded.sampleRate, kbps, makeRecordingRobotizerFileName("mp3"), makeRecordingRobotizerFileName("wav"));
 
         const seconds = (int16.length / decoded.sampleRate).toFixed(1);
         setStatus(`<strong>Ready.</strong> ${isVocoder ? "Vocoded" : "Robotized"} recording: ${seconds} sec · MP3 ${kbps} kbps.`);
@@ -4570,21 +4544,7 @@
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3 and WAV.");
 
-        const wavBlob = encodeWavMono(int16, sampleRate);
-        const mp3Blob = encodeMp3Mono(int16, sampleRate, kbps);
-
-        const mp3Url = URL.createObjectURL(mp3Blob);
-        const wavUrl = URL.createObjectURL(wavBlob);
-        currentUrls.push(mp3Url, wavUrl);
-
-        resetAudioPlayerPlaybackLevel();
-        el.audioPlayer.src = mp3Url;
-        el.downloadMp3.href = mp3Url;
-        el.downloadWav.href = wavUrl;
-        el.downloadMp3.download = makeRecordingRobotizerFileName("mp3");
-        el.downloadWav.download = makeRecordingRobotizerFileName("wav");
-        el.downloadMp3.classList.remove("disabled");
-        el.downloadWav.classList.remove("disabled");
+        publishEncodedOutput(int16, sampleRate, kbps, makeRecordingRobotizerFileName("mp3"), makeRecordingRobotizerFileName("wav"));
 
         const seconds = (int16.length / sampleRate).toFixed(1);
         setStatus(`<strong>Ready.</strong> Auto Mic ${isVocoder ? "vocoded" : "robotized"}: ${seconds} sec · MP3 ${kbps} kbps.`);
@@ -4746,16 +4706,83 @@
       } catch (_) {}
     }
 
+    function cloneInt16Array(source) {
+      const copy = new Int16Array(source.length);
+      copy.set(source);
+      return copy;
+    }
+
+    function applyOutputVolumeToInt16(source) {
+      const gain = clamp(getPlaybackVolumePercent() / 100, 0, 5);
+      const output = new Int16Array(source.length);
+      for (let i = 0; i < source.length; i++) {
+        output[i] = clampInt(Math.round(source[i] * gain), -32768, 32767);
+      }
+      return output;
+    }
+
+    function publishEncodedOutput(baseInt16, sampleRate, kbps, mp3Name, wavName, options = {}) {
+      currentOutputSource = {
+        int16: cloneInt16Array(baseInt16),
+        sampleRate,
+        kbps,
+        mp3Name,
+        wavName,
+        visualizerTitle: options.updateVisualizerTitle || visualizerState.title || "Output"
+      };
+      renderCurrentOutput(options);
+    }
+
+    function renderCurrentOutput(options = {}) {
+      if (!currentOutputSource) return;
+
+      const wasPlaying = el.audioPlayer && !el.audioPlayer.paused && !el.audioPlayer.ended;
+      const currentTime = el.audioPlayer ? el.audioPlayer.currentTime || 0 : 0;
+      revokeUrls();
+
+      const outputInt16 = applyOutputVolumeToInt16(currentOutputSource.int16);
+      const wavBlob = encodeWavMono(outputInt16, currentOutputSource.sampleRate);
+      const mp3Blob = encodeMp3Mono(outputInt16, currentOutputSource.sampleRate, currentOutputSource.kbps);
+      const mp3Url = URL.createObjectURL(mp3Blob);
+      const wavUrl = URL.createObjectURL(wavBlob);
+      currentUrls.push(mp3Url, wavUrl);
+
+      resetAudioPlayerPlaybackLevel();
+      el.audioPlayer.src = mp3Url;
+      el.downloadMp3.href = mp3Url;
+      el.downloadWav.href = wavUrl;
+      el.downloadMp3.download = currentOutputSource.mp3Name;
+      el.downloadWav.download = currentOutputSource.wavName;
+      el.downloadMp3.classList.remove("disabled");
+      el.downloadWav.classList.remove("disabled");
+
+      updateVisualizerFromInt16(outputInt16, currentOutputSource.sampleRate, currentOutputSource.visualizerTitle);
+
+      if (wasPlaying) {
+        el.audioPlayer.currentTime = Math.min(currentTime, Math.max(0, outputInt16.length / currentOutputSource.sampleRate - .05));
+        el.audioPlayer.play().catch(() => {});
+      }
+    }
+
+    function scheduleOutputVolumeRender() {
+      if (!currentOutputSource) return;
+      clearTimeout(outputVolumeRenderTimer);
+      outputVolumeRenderTimer = setTimeout(() => {
+        renderCurrentOutput();
+      }, 180);
+    }
+
     function getPlaybackVolumePercent() {
-      return clampInt(el.playbackVolume?.value ?? 100, 0, 200);
+      return clampInt(el.playbackVolume?.value ?? 100, 0, 500);
     }
 
     function setPlaybackVolume(value, allowAudioGraphResume = false) {
-      const percent = clampInt(value, 0, 200);
+      const percent = clampInt(value, 0, 500);
       if (el.playbackVolume) el.playbackVolume.value = percent;
       if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
       if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
-      applyPlaybackVolume(allowAudioGraphResume);
+      resetAudioPlayerPlaybackLevel();
+      scheduleOutputVolumeRender();
     }
 
     function ensurePlaybackGainGraph(allowResume = false) {
@@ -4764,8 +4791,12 @@
       if (!AudioContextClass) return;
 
       playbackAudioContext = playbackAudioContext || new AudioContextClass();
-      playbackSourceNode = playbackAudioContext.createMediaElementSource(el.audioPlayer);
       playbackGainNode = playbackAudioContext.createGain();
+
+      if (!playbackSourceNode) {
+        playbackSourceNode = playbackAudioContext.createMediaElementSource(el.audioPlayer);
+      }
+
       playbackSourceNode.connect(playbackGainNode);
       playbackGainNode.connect(playbackAudioContext.destination);
 
@@ -4777,34 +4808,12 @@
     function applyPlaybackVolume(allowAudioGraphResume = false) {
       try {
         if (!el.audioPlayer) return;
-        const percent = getPlaybackVolumePercent();
-        const gain = percent / 100;
-        el.audioPlayer.muted = percent <= 0;
+        el.audioPlayer.muted = false;
+        el.audioPlayer.volume = 1;
         el.audioPlayer.setAttribute("playsinline", "");
-
-        if (percent <= 100 && !playbackGainNode) {
-          el.audioPlayer.volume = gain;
-          return;
-        }
-
-        ensurePlaybackGainGraph(allowAudioGraphResume);
-
-        if (playbackGainNode) {
-          el.audioPlayer.volume = 1;
-          playbackGainNode.gain.value = gain;
-          if (allowAudioGraphResume && playbackAudioContext?.state === "suspended") {
-            playbackAudioContext.resume().catch(() => {});
-          }
-        } else {
-          el.audioPlayer.volume = Math.min(1, gain);
-        }
+        if (playbackGainNode) playbackGainNode.gain.value = 1;
       } catch (error) {
         console.error(error);
-        if (el.audioPlayer) {
-          const gain = Math.min(1, getPlaybackVolumePercent() / 100);
-          el.audioPlayer.volume = gain;
-          el.audioPlayer.muted = gain <= 0;
-        }
       }
     }
 
@@ -5743,21 +5752,7 @@
 
         setStatus("<strong>Step 3 of 3.</strong> Encoding MP3.");
 
-        const wavBlob = encodeWavMono(int16, decoded.sampleRate);
-        const mp3Blob = encodeMp3Mono(int16, decoded.sampleRate, kbps);
-
-        const mp3Url = URL.createObjectURL(mp3Blob);
-        const wavUrl = URL.createObjectURL(wavBlob);
-        currentUrls.push(mp3Url, wavUrl);
-
-        resetAudioPlayerPlaybackLevel();
-        el.audioPlayer.src = mp3Url;
-        el.downloadMp3.href = mp3Url;
-        el.downloadWav.href = wavUrl;
-        el.downloadMp3.download = makeFileName("mp3");
-        el.downloadWav.download = makeFileName("wav");
-        el.downloadMp3.classList.remove("disabled");
-        el.downloadWav.classList.remove("disabled");
+        publishEncodedOutput(int16, decoded.sampleRate, kbps, makeFileName("mp3"), makeFileName("wav"));
 
         const seconds = (int16.length / decoded.sampleRate).toFixed(1);
         setStatus(`<strong>Ready.</strong> Audio length: ${seconds} sec. MP3 bitrate: ${kbps} kbps.`);
