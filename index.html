@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.9 Auto Mic Recovery</title>
+  <title>Robo Phonix v22.0 iOS Audio Session Volume Fix</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -2999,6 +2999,11 @@
       setPlaybackVolume(100, false);
 
       el.audioPlayer.addEventListener("play", () => {
+        if (autoMicActive || recordingStream) {
+          lockMicPlaybackAudioSession();
+        } else {
+          setAudioSessionType("playback");
+        }
         applyPlaybackVolume(true);
         startVisualizerPlayback();
       });
@@ -4267,8 +4272,10 @@
         }
 
         clearRecordedAudio(false);
+        prepareMicAudioSession();
 
         recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        lockMicPlaybackAudioSession();
         const mimeType = pickSupportedRecordingMimeType();
         const options = mimeType ? { mimeType } : undefined;
 
@@ -4849,6 +4856,36 @@
       }
     }
 
+    function setAudioSessionType(type) {
+      try {
+        if (navigator.audioSession && typeof navigator.audioSession.type !== "undefined") {
+          navigator.audioSession.type = type;
+          return true;
+        }
+      } catch (error) {
+        console.warn("AudioSession type change failed", type, error);
+      }
+      return false;
+    }
+
+    function prepareMicAudioSession() {
+      // iOS/Safari can change output routing and loudness when getUserMedia is active.
+      // Reset first, then switch to play-and-record after the mic stream exists.
+      setAudioSessionType("auto");
+    }
+
+    function lockMicPlaybackAudioSession() {
+      // Keep automatic Auto Mic playback and later manual replay in the same session while Auto Mic is active.
+      setAudioSessionType("play-and-record");
+    }
+
+    function resetAfterMicAudioSession() {
+      // After mic capture stops, kick iOS/Safari back to normal media playback routing.
+      if (setAudioSessionType("playback")) {
+        setAudioSessionType("auto");
+      }
+    }
+
     async function startAutoMic() {
       try {
         primeAutoMicPlaybackUnlock();
@@ -4859,6 +4896,7 @@
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error("Auto Mic needs microphone access, which is not supported in this browser.");
         }
+        prepareMicAudioSession();
         autoMicStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -4866,6 +4904,7 @@
             autoGainControl: true
           }
         });
+        lockMicPlaybackAudioSession();
 
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioContextClass) {
@@ -4954,6 +4993,7 @@
       if (autoMicStream) {
         autoMicStream.getTracks().forEach((track) => track.stop());
         autoMicStream = null;
+        resetAfterMicAudioSession();
       }
 
       if (autoMicAudioContext && autoMicAudioContext.close) {
@@ -5136,6 +5176,7 @@
       try {
         autoMicPausedForPlayback = true;
         updateAutoMicUi("playing");
+        lockMicPlaybackAudioSession();
         resetAudioPlayerPlaybackLevel();
         el.audioPlayer.currentTime = 0;
         const playPromise = el.audioPlayer.play();
@@ -5159,6 +5200,7 @@
       autoMicPausedForPlayback = false;
       autoMicPauseUntil = Date.now() + 650;
       if (autoMicActive && !autoMicRendering) {
+        lockMicPlaybackAudioSession();
         updateAutoMicUi("listening");
         setStatus("<strong>Auto Mic listening.</strong> Speak again for the next automatic render.");
       } else {
@@ -5401,6 +5443,7 @@
       if (recordingStream) {
         recordingStream.getTracks().forEach((track) => track.stop());
         recordingStream = null;
+        resetAfterMicAudioSession();
       }
     }
 
