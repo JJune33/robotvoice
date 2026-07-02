@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.4 Simple UX</title>
+  <title>Robo Phonix v21.5 Output Volume Fix</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -4735,32 +4735,28 @@
     function applyOutputLoudnessBoost(input, gain) {
       if (!(input instanceof Float32Array) || !input.length) return input;
 
-      const level = measureActiveLevel(input);
-      if (level.peak < .001 || level.rms < .001) return input;
-
       const g = clamp(Number(gain) || 1, 1, 5);
-      const targetRms = clamp(.18 + (g - 1) * .085, .18, .52);
-      const rmsGain = clamp(targetRms / level.rms, 1, 14);
-      const sliderDrive = 1 + (g - 1) * .55;
-      const drive = clamp(rmsGain * sliderDrive, 1, 18);
-      const ceiling = .985;
       const output = new Float32Array(input.length);
-      const normalizer = Math.tanh(1.65);
+
+      if (g <= 1.001) {
+        output.set(input);
+        return output;
+      }
+
+      const knee = .72;
+      const ceiling = .985;
 
       for (let i = 0; i < input.length; i++) {
-        output[i] = Math.tanh(input[i] * drive * 1.65) / normalizer;
-      }
+        const driven = input[i] * g;
+        const sign = driven < 0 ? -1 : 1;
+        const abs = Math.abs(driven);
 
-      let peak = 0;
-      for (let i = 0; i < output.length; i++) {
-        const abs = Math.abs(output[i]);
-        if (abs > peak) peak = abs;
-      }
-
-      if (peak > ceiling) {
-        const scale = ceiling / peak;
-        for (let i = 0; i < output.length; i++) {
-          output[i] *= scale;
+        if (abs <= knee) {
+          output[i] = driven;
+        } else {
+          const over = abs - knee;
+          const compressed = knee + (ceiling - knee) * (1 - Math.exp(-over / (ceiling - knee)));
+          output[i] = sign * Math.min(ceiling, compressed);
         }
       }
 
@@ -4828,15 +4824,7 @@
       if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
       if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
 
-      if (percent > 100 && el.audioPlayer?.src) {
-        ensurePlaybackGainGraph(allowAudioGraphResume);
-        if (playbackGainNode) {
-          playbackGainNode.gain.value = clamp(percent / 100, 1, 5);
-        }
-      } else {
-        resetAudioPlayerPlaybackLevel();
-      }
-
+      resetAudioPlayerPlaybackLevel();
       scheduleOutputVolumeRender();
     }
 
