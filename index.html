@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v22.2 Vocoder Safe Recovery</title>
+  <title>Robo Phonix v22.3 Real Output Gain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -1944,12 +1944,12 @@
 
           <div class="playback-volume-lab" aria-label="Output volume">
             <div class="playback-volume-head">
-              <span>Player Volume</span>
+              <span>Output Volume</span>
               <small id="playbackVolumeReadout">100%</small>
             </div>
             <div class="playback-volume-row">
-              <input id="playbackVolume" type="range" min="0" max="100" step="1" value="100">
-              <input id="playbackVolumeNum" type="number" min="0" max="100" step="1" value="100">
+              <input id="playbackVolume" type="range" min="0" max="500" step="1" value="100">
+              <input id="playbackVolumeNum" type="number" min="0" max="500" step="1" value="100">
             </div>
           </div>
 
@@ -4788,7 +4788,7 @@
       const currentTime = el.audioPlayer ? el.audioPlayer.currentTime || 0 : 0;
       revokeUrls();
 
-      const outputInt16 = cloneInt16Array(currentOutputSource.int16);
+      const outputInt16 = applyOutputVolumeToInt16(currentOutputSource.int16);
       const wavBlob = encodeWavMono(outputInt16, currentOutputSource.sampleRate);
       const mp3Blob = encodeMp3Mono(outputInt16, currentOutputSource.sampleRate, currentOutputSource.kbps);
       const mp3Url = URL.createObjectURL(mp3Blob);
@@ -4816,28 +4816,26 @@
     }
 
     function scheduleOutputVolumeRender() {
-      return;
+      if (!currentOutputSource) return;
+      clearTimeout(outputVolumeRenderTimer);
+      outputVolumeRenderTimer = setTimeout(() => {
+        outputVolumeRenderTimer = null;
+        renderCurrentOutput({ preservePlayback: true });
+      }, 120);
     }
 
     function getPlaybackVolumePercent() {
-      return clampInt(el.playbackVolume?.value ?? 100, 0, 100);
+      return clampInt(el.playbackVolume?.value ?? 100, 0, 500);
     }
 
     function setPlaybackVolume(value, allowAudioGraphResume = false) {
-      const percent = clampInt(value, 0, 100);
+      const percent = clampInt(value, 0, 500);
       if (el.playbackVolume) el.playbackVolume.value = percent;
       if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
       if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
 
-      try {
-        if (el.audioPlayer) {
-          el.audioPlayer.muted = false;
-          el.audioPlayer.volume = percent / 100;
-          el.audioPlayer.setAttribute("playsinline", "");
-        }
-      } catch (error) {
-        console.error(error);
-      }
+      resetAudioPlayerPlaybackLevel();
+      scheduleOutputVolumeRender();
     }
 
     function ensurePlaybackGainGraph(allowResume = false) {
@@ -4845,14 +4843,14 @@
     }
 
     function applyPlaybackVolume(allowAudioGraphResume = false) {
-      setPlaybackVolume(getPlaybackVolumePercent(), false);
+      resetAudioPlayerPlaybackLevel();
     }
 
     function resetAudioPlayerPlaybackLevel() {
       try {
         if (!el.audioPlayer) return;
         el.audioPlayer.muted = false;
-        el.audioPlayer.volume = getPlaybackVolumePercent() / 100;
+        el.audioPlayer.volume = 1;
         el.audioPlayer.setAttribute("playsinline", "");
       } catch (error) {
         console.error(error);
