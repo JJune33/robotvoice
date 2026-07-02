@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.8 Real Playback Gain</title>
+  <title>Robo Phonix v21.9 Auto Mic Recovery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -4560,6 +4560,9 @@
         return false;
       } finally {
         lockRecordingUi(false);
+        if (autoMicActive || autoMicRendering || autoMicPausedForPlayback) {
+          el.stopAutoMicBtn.disabled = false;
+        }
       }
     }
 
@@ -4743,23 +4746,17 @@
         return output;
       }
 
-      // Output Volume must change the actual encoded audio.
-      // This is direct gain with a soft safety limiter, not normalization.
-      const knee = .88;
+      // Real output gain for the encoded MP3/WAV itself.
+      // Above 100% this intentionally increases loudness with soft saturation,
+      // instead of normalizing the result back down.
+      const drive = g;
+      const saturation = 1.35;
       const ceiling = .985;
-      const kneeRange = Math.max(.001, ceiling - knee);
 
       for (let i = 0; i < input.length; i++) {
-        const driven = input[i] * g;
-        const sign = driven < 0 ? -1 : 1;
-        const abs = Math.abs(driven);
-
-        if (abs <= knee) {
-          output[i] = driven;
-        } else {
-          const over = abs - knee;
-          output[i] = sign * (knee + kneeRange * (1 - Math.exp(-over / kneeRange)));
-        }
+        const x = input[i] * drive;
+        const y = Math.tanh(x * saturation);
+        output[i] = clamp(y, -ceiling, ceiling);
       }
 
       return output;
@@ -4793,6 +4790,9 @@
 
       resetAudioPlayerPlaybackLevel();
       el.audioPlayer.src = mp3Url;
+      if (typeof el.audioPlayer.load === "function") {
+        el.audioPlayer.load();
+      }
       el.downloadMp3.href = mp3Url;
       el.downloadWav.href = wavUrl;
       el.downloadMp3.download = currentOutputSource.mp3Name;
@@ -4826,70 +4826,27 @@
       if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
       if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
 
-      applyPlaybackVolume(allowAudioGraphResume);
+      resetAudioPlayerPlaybackLevel();
       scheduleOutputVolumeRender();
     }
 
     function ensurePlaybackGainGraph(allowResume = false) {
-      if (!el.audioPlayer) return false;
-
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return false;
-
-      try {
-        if (!playbackAudioContext) {
-          playbackAudioContext = new AudioContextClass();
-        }
-
-        if (!playbackSourceNode) {
-          playbackSourceNode = playbackAudioContext.createMediaElementSource(el.audioPlayer);
-          playbackGainNode = playbackAudioContext.createGain();
-          playbackSourceNode.connect(playbackGainNode);
-          playbackGainNode.connect(playbackAudioContext.destination);
-        }
-
-        if (allowResume && playbackAudioContext.state === "suspended") {
-          playbackAudioContext.resume().catch(() => {});
-        }
-
-        return true;
-      } catch (error) {
-        // createMediaElementSource can only be made once per audio element.
-        // If the browser refuses the graph, fall back to normal player volume.
-        console.error(error);
-        return false;
-      }
+      return false;
     }
 
     function applyPlaybackVolume(allowAudioGraphResume = false) {
-      try {
-        if (!el.audioPlayer) return;
-
-        const percent = getPlaybackVolumePercent();
-        const gain = clamp(percent / 100, 0, 5);
-
-        el.audioPlayer.muted = false;
-        el.audioPlayer.setAttribute("playsinline", "");
-
-        const graphReady = ensurePlaybackGainGraph(allowAudioGraphResume);
-
-        if (graphReady && playbackGainNode) {
-          // Real player gain: 500% is actually 5x during app playback.
-          el.audioPlayer.volume = 1;
-          const now = playbackAudioContext?.currentTime || 0;
-          playbackGainNode.gain.cancelScheduledValues(now);
-          playbackGainNode.gain.setTargetAtTime(gain, now, .015);
-        } else {
-          // Browser fallback: native audio volume cannot exceed 100%.
-          el.audioPlayer.volume = clamp(gain, 0, 1);
-        }
-      } catch (error) {
-        console.error(error);
-      }
+      resetAudioPlayerPlaybackLevel();
     }
 
     function resetAudioPlayerPlaybackLevel() {
-      applyPlaybackVolume(false);
+      try {
+        if (!el.audioPlayer) return;
+        el.audioPlayer.muted = false;
+        el.audioPlayer.volume = 1;
+        el.audioPlayer.setAttribute("playsinline", "");
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     async function startAutoMic() {
@@ -5383,6 +5340,8 @@
 
     function lockRecordingUi(isLocked) {
       el.startRecordingBtn.disabled = isLocked || autoMicActive;
+      // Auto Mic must remain stoppable while it is active, rendering, or playing back.
+      el.stopAutoMicBtn.disabled = !(autoMicActive || autoMicRendering || autoMicPausedForPlayback);
       el.stopRecordingBtn.disabled = true;
       el.processRecordingBtn.disabled = isLocked || !recordedAudioFile;
       el.clearRecordingBtn.disabled = isLocked || !recordedAudioFile;
