@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v22.5 Measured Exports Booster</title>
+  <title>Robo Phonix v23.0 Stability Recovery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -1948,8 +1948,8 @@
               <small id="playbackVolumeReadout">100%</small>
             </div>
             <div class="playback-volume-row">
-              <input id="playbackVolume" type="range" min="0" max="500" step="1" value="100">
-              <input id="playbackVolumeNum" type="number" min="0" max="500" step="1" value="100">
+              <input id="playbackVolume" type="range" min="0" max="100" step="1" value="100">
+              <input id="playbackVolumeNum" type="number" min="0" max="100" step="1" value="100">
             </div>
           </div>
 
@@ -2999,11 +2999,6 @@
       setPlaybackVolume(100, false);
 
       el.audioPlayer.addEventListener("play", () => {
-        if (autoMicActive || recordingStream) {
-          lockMicPlaybackAudioSession();
-        } else {
-          setAudioSessionType("playback");
-        }
         applyPlaybackVolume(true);
         startVisualizerPlayback();
       });
@@ -4723,164 +4718,7 @@
     }
 
     function applyOutputVolumeToInt16(source) {
-      const percent = getPlaybackVolumePercent();
-      const gain = clamp(percent / 100, 0, 5);
-      if (!(source instanceof Int16Array) || !source.length) return source;
-
-      const float = new Float32Array(source.length);
-      for (let i = 0; i < source.length; i++) {
-        float[i] = source[i] / 32768;
-      }
-
-      if (Math.abs(gain - 1) < .001) {
-        return cloneInt16Array(source);
-      }
-
-      if (gain < 1) {
-        return floatToInt16(applyFixedGain(float, gain));
-      }
-
-      return floatToInt16(applyMeasuredExportBooster(float, gain));
-    }
-
-    function applyMeasuredExportBooster(input, gain) {
-      if (!(input instanceof Float32Array) || !input.length) return input;
-
-      const g = clamp(Number(gain) || 1, 1, 5);
-      const copy = new Float32Array(input.length);
-      copy.set(input);
-      if (g <= 1.001) return copy;
-
-      const before = measureFullLevel(copy);
-      if (before.peak < .001 || before.rms < .001) return copy;
-
-      // Export-only booster. This deliberately changes only the rendered MP3/WAV buffer.
-      // It does not touch Robot FX, Vocoder FX, TTS, Auto Mic detection, or the player route.
-      const ceiling = .992;
-      const targetRms = clamp(before.rms * g, before.rms, .82);
-      let working = copy;
-
-      // Stage 1: real gain into a ceiling. This guarantees that the file changes audibly.
-      working = hardCeilingLimit(applyFixedGain(working, g), ceiling);
-
-      // Stage 2: if peak headroom was already gone, raise perceived loudness by reducing crest factor.
-      // This is what a plain sample multiplier failed to do.
-      let after = measureFullLevel(working);
-      for (let pass = 0; pass < 5 && after.rms > .001 && after.rms < targetRms * .92; pass++) {
-        const needed = clamp(targetRms / after.rms, 1.05, 2.2);
-        working = hardCeilingLimit(applyFixedGain(working, needed), ceiling);
-        working = parallelDensityBoost(working, clamp(g, 1.2, 5), ceiling);
-        after = measureFullLevel(working);
-      }
-
-      return hardCeilingLimit(working, ceiling);
-    }
-
-    function measureFullLevel(input) {
-      let peak = 0;
-      let sum = 0;
-      for (let i = 0; i < input.length; i++) {
-        const value = Number(input[i]) || 0;
-        const abs = Math.abs(value);
-        if (abs > peak) peak = abs;
-        sum += value * value;
-      }
-      return {
-        peak,
-        rms: Math.sqrt(sum / Math.max(1, input.length))
-      };
-    }
-
-    function hardCeilingLimit(input, ceiling = .992) {
-      const c = clamp(ceiling, .1, .999);
-      const output = new Float32Array(input.length);
-      for (let i = 0; i < input.length; i++) {
-        output[i] = clamp(input[i], -c, c);
-      }
-      return output;
-    }
-
-    function parallelDensityBoost(input, amount = 2, ceiling = .992) {
-      const c = clamp(ceiling, .1, .999);
-      const drive = clamp(1 + amount * 1.6, 1.2, 9);
-      const mix = clamp((amount - 1) / 4, .08, .72);
-      const output = new Float32Array(input.length);
-      const norm = Math.atan(drive);
-
-      for (let i = 0; i < input.length; i++) {
-        const dry = input[i];
-        const dense = Math.atan(dry * drive) / norm;
-        output[i] = clamp(dry * (1 - mix) + dense * mix, -c, c);
-      }
-
-      return output;
-    }
-
-    function applyVoiceSafeCompressor(input, threshold = .32, ratio = 5.5, knee = .82) {
-      const output = new Float32Array(input.length);
-      const t = clamp(threshold, .08, .9);
-      const r = clamp(ratio, 1, 20);
-      const k = clamp(knee, .1, 1.5);
-
-      for (let i = 0; i < input.length; i++) {
-        const x = input[i];
-        const sign = x < 0 ? -1 : 1;
-        const ax = Math.abs(x);
-
-        if (ax <= t) {
-          output[i] = x;
-          continue;
-        }
-
-        const over = ax - t;
-        const compressed = t + over / r;
-        const soft = Math.tanh(compressed * k) / Math.tanh(k);
-        output[i] = sign * clamp(soft, 0, .995);
-      }
-
-      return output;
-    }
-
-    function applyLookaheadLimiter(input, ceiling = .985, lookahead = 384, attack = .0045, release = .055) {
-      const length = input.length;
-      const output = new Float32Array(length);
-      const c = clamp(ceiling, .5, .995);
-      const look = clampInt(lookahead, 0, 4096);
-      const deque = [];
-      let head = 0;
-      let currentGain = 1;
-      const attackCoeff = clamp(attack, .001, .5);
-      const releaseCoeff = clamp(release, .001, .5);
-
-      for (let i = 0; i < length + look; i++) {
-        if (i < length) {
-          while (deque.length > head && Math.abs(input[deque[deque.length - 1]]) <= Math.abs(input[i])) {
-            deque.pop();
-          }
-          deque.push(i);
-        }
-
-        const outIndex = i - look;
-        if (outIndex < 0) continue;
-
-        while (head < deque.length && deque[head] < outIndex) head += 1;
-        if (head > 64) {
-          deque.splice(0, head);
-          head = 0;
-        }
-
-        const peak = head < deque.length ? Math.abs(input[deque[head]]) : Math.abs(input[outIndex]);
-        const neededGain = peak > c ? c / peak : 1;
-        if (neededGain < currentGain) {
-          currentGain += (neededGain - currentGain) * attackCoeff;
-        } else {
-          currentGain += (neededGain - currentGain) * releaseCoeff;
-        }
-
-        output[outIndex] = clamp(input[outIndex] * currentGain, -c, c);
-      }
-
-      return output;
+      return cloneInt16Array(source);
     }
 
     function publishEncodedOutput(baseInt16, sampleRate, kbps, mp3Name, wavName, options = {}) {
@@ -4902,7 +4740,7 @@
       const currentTime = el.audioPlayer ? el.audioPlayer.currentTime || 0 : 0;
       revokeUrls();
 
-      const outputInt16 = applyOutputVolumeToInt16(currentOutputSource.int16);
+      const outputInt16 = cloneInt16Array(currentOutputSource.int16);
       updateOutputBoostReadout(currentOutputSource.int16, outputInt16);
       const wavBlob = encodeWavMono(outputInt16, currentOutputSource.sampleRate);
       const mp3Blob = encodeMp3Mono(outputInt16, currentOutputSource.sampleRate, currentOutputSource.kbps);
@@ -4933,17 +4771,7 @@
     function updateOutputBoostReadout(sourceInt16, outputInt16) {
       try {
         const percent = getPlaybackVolumePercent();
-        if (!el.playbackVolumeReadout) return;
-        if (percent === 100 || !(sourceInt16 instanceof Int16Array) || !(outputInt16 instanceof Int16Array)) {
-          el.playbackVolumeReadout.textContent = `${percent}%`;
-          return;
-        }
-
-        const before = measureInt16Rms(sourceInt16);
-        const after = measureInt16Rms(outputInt16);
-        const db = before > 0 && after > 0 ? 20 * Math.log10(after / before) : 0;
-        const dbText = Number.isFinite(db) ? `${db >= 0 ? "+" : ""}${db.toFixed(1)} dB RMS` : "rendered";
-        el.playbackVolumeReadout.textContent = `${percent}% • ${dbText}`;
+        if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
       } catch (_) {}
     }
 
@@ -4957,26 +4785,21 @@
     }
 
     function scheduleOutputVolumeRender() {
-      if (!currentOutputSource) return;
-      clearTimeout(outputVolumeRenderTimer);
-      outputVolumeRenderTimer = setTimeout(() => {
-        outputVolumeRenderTimer = null;
-        renderCurrentOutput({ preservePlayback: true });
-      }, 120);
+      // Stability recovery: the player volume slider must not re-render or rewrite MP3/WAV output.
+      return;
     }
 
     function getPlaybackVolumePercent() {
-      return clampInt(el.playbackVolume?.value ?? 100, 0, 500);
+      return clampInt(el.playbackVolume?.value ?? 100, 0, 100);
     }
 
     function setPlaybackVolume(value, allowAudioGraphResume = false) {
-      const percent = clampInt(value, 0, 500);
+      const percent = clampInt(value, 0, 100);
       if (el.playbackVolume) el.playbackVolume.value = percent;
       if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
       if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
 
-      resetAudioPlayerPlaybackLevel();
-      scheduleOutputVolumeRender();
+      applyPlaybackVolume(allowAudioGraphResume);
     }
 
     function ensurePlaybackGainGraph(allowResume = false) {
@@ -4990,8 +4813,9 @@
     function resetAudioPlayerPlaybackLevel() {
       try {
         if (!el.audioPlayer) return;
+        const percent = getPlaybackVolumePercent();
         el.audioPlayer.muted = false;
-        el.audioPlayer.volume = 1;
+        el.audioPlayer.volume = clamp(percent / 100, 0, 1);
         el.audioPlayer.setAttribute("playsinline", "");
       } catch (error) {
         console.error(error);
@@ -4999,33 +4823,19 @@
     }
 
     function setAudioSessionType(type) {
-      try {
-        if (navigator.audioSession && typeof navigator.audioSession.type !== "undefined") {
-          navigator.audioSession.type = type;
-          return true;
-        }
-      } catch (error) {
-        console.warn("AudioSession type change failed", type, error);
-      }
       return false;
     }
 
     function prepareMicAudioSession() {
-      // iOS/Safari can change output routing and loudness when getUserMedia is active.
-      // Reset first, then switch to play-and-record after the mic stream exists.
-      setAudioSessionType("auto");
+      return false;
     }
 
     function lockMicPlaybackAudioSession() {
-      // Keep automatic Auto Mic playback and later manual replay in the same session while Auto Mic is active.
-      setAudioSessionType("play-and-record");
+      return false;
     }
 
     function resetAfterMicAudioSession() {
-      // After mic capture stops, kick iOS/Safari back to normal media playback routing.
-      if (setAudioSessionType("playback")) {
-        setAudioSessionType("auto");
-      }
+      return false;
     }
 
     async function startAutoMic() {
