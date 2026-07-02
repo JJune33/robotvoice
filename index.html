@@ -4725,9 +4725,46 @@
         return floatToInt16(float);
       }
 
-      const gained = applyFixedGain(float, gain);
-      const safe = gain > 1 ? brickwallLimiter(gained, .985) : gained;
-      return floatToInt16(safe);
+      if (gain < 1) {
+        return floatToInt16(applyFixedGain(float, gain));
+      }
+
+      return floatToInt16(applyOutputLoudnessBoost(float, gain));
+    }
+
+    function applyOutputLoudnessBoost(input, gain) {
+      if (!(input instanceof Float32Array) || !input.length) return input;
+
+      const level = measureActiveLevel(input);
+      if (level.peak < .001 || level.rms < .001) return input;
+
+      const g = clamp(Number(gain) || 1, 1, 5);
+      const targetRms = clamp(.18 + (g - 1) * .085, .18, .52);
+      const rmsGain = clamp(targetRms / level.rms, 1, 14);
+      const sliderDrive = 1 + (g - 1) * .55;
+      const drive = clamp(rmsGain * sliderDrive, 1, 18);
+      const ceiling = .985;
+      const output = new Float32Array(input.length);
+      const normalizer = Math.tanh(1.65);
+
+      for (let i = 0; i < input.length; i++) {
+        output[i] = Math.tanh(input[i] * drive * 1.65) / normalizer;
+      }
+
+      let peak = 0;
+      for (let i = 0; i < output.length; i++) {
+        const abs = Math.abs(output[i]);
+        if (abs > peak) peak = abs;
+      }
+
+      if (peak > ceiling) {
+        const scale = ceiling / peak;
+        for (let i = 0; i < output.length; i++) {
+          output[i] *= scale;
+        }
+      }
+
+      return output;
     }
 
     function publishEncodedOutput(baseInt16, sampleRate, kbps, mp3Name, wavName, options = {}) {
@@ -4778,7 +4815,7 @@
       clearTimeout(outputVolumeRenderTimer);
       outputVolumeRenderTimer = setTimeout(() => {
         renderCurrentOutput();
-      }, 180);
+      }, 60);
     }
 
     function getPlaybackVolumePercent() {
@@ -4790,7 +4827,16 @@
       if (el.playbackVolume) el.playbackVolume.value = percent;
       if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
       if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
-      resetAudioPlayerPlaybackLevel();
+
+      if (percent > 100 && el.audioPlayer?.src) {
+        ensurePlaybackGainGraph(allowAudioGraphResume);
+        if (playbackGainNode) {
+          playbackGainNode.gain.value = clamp(percent / 100, 1, 5);
+        }
+      } else {
+        resetAudioPlayerPlaybackLevel();
+      }
+
       scheduleOutputVolumeRender();
     }
 
