@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.7 Stable Recovery</title>
+  <title>Robo Phonix v21.8 Real Playback Gain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -4826,21 +4826,63 @@
       if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
       if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
 
-      // The slider controls the actual encoded output.
-      // No separate playback boost is used, so player and downloads stay matched.
+      applyPlaybackVolume(allowAudioGraphResume);
       scheduleOutputVolumeRender();
     }
 
     function ensurePlaybackGainGraph(allowResume = false) {
-      return;
+      if (!el.audioPlayer) return false;
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return false;
+
+      try {
+        if (!playbackAudioContext) {
+          playbackAudioContext = new AudioContextClass();
+        }
+
+        if (!playbackSourceNode) {
+          playbackSourceNode = playbackAudioContext.createMediaElementSource(el.audioPlayer);
+          playbackGainNode = playbackAudioContext.createGain();
+          playbackSourceNode.connect(playbackGainNode);
+          playbackGainNode.connect(playbackAudioContext.destination);
+        }
+
+        if (allowResume && playbackAudioContext.state === "suspended") {
+          playbackAudioContext.resume().catch(() => {});
+        }
+
+        return true;
+      } catch (error) {
+        // createMediaElementSource can only be made once per audio element.
+        // If the browser refuses the graph, fall back to normal player volume.
+        console.error(error);
+        return false;
+      }
     }
 
     function applyPlaybackVolume(allowAudioGraphResume = false) {
       try {
         if (!el.audioPlayer) return;
+
+        const percent = getPlaybackVolumePercent();
+        const gain = clamp(percent / 100, 0, 5);
+
         el.audioPlayer.muted = false;
-        el.audioPlayer.volume = 1;
         el.audioPlayer.setAttribute("playsinline", "");
+
+        const graphReady = ensurePlaybackGainGraph(allowAudioGraphResume);
+
+        if (graphReady && playbackGainNode) {
+          // Real player gain: 500% is actually 5x during app playback.
+          el.audioPlayer.volume = 1;
+          const now = playbackAudioContext?.currentTime || 0;
+          playbackGainNode.gain.cancelScheduledValues(now);
+          playbackGainNode.gain.setTargetAtTime(gain, now, .015);
+        } else {
+          // Browser fallback: native audio volume cannot exceed 100%.
+          el.audioPlayer.volume = clamp(gain, 0, 1);
+        }
       } catch (error) {
         console.error(error);
       }
