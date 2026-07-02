@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v21.5 Output Volume Fix</title>
+  <title>Robo Phonix v21.6 Recovery Output Volume</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -4743,20 +4743,22 @@
         return output;
       }
 
-      const knee = .72;
+      // Direct gain must actually get louder above 100%.
+      // Soft clipping is only a safety net against digital overflow, not a normalizer.
       const ceiling = .985;
+      const softKnee = .90;
+      const kneeRange = Math.max(.001, ceiling - softKnee);
 
       for (let i = 0; i < input.length; i++) {
         const driven = input[i] * g;
         const sign = driven < 0 ? -1 : 1;
         const abs = Math.abs(driven);
 
-        if (abs <= knee) {
+        if (abs <= softKnee) {
           output[i] = driven;
         } else {
-          const over = abs - knee;
-          const compressed = knee + (ceiling - knee) * (1 - Math.exp(-over / (ceiling - knee)));
-          output[i] = sign * Math.min(ceiling, compressed);
+          const over = abs - softKnee;
+          output[i] = sign * (softKnee + kneeRange * (1 - Math.exp(-over / kneeRange)));
         }
       }
 
@@ -4824,8 +4826,31 @@
       if (el.playbackVolumeNum) el.playbackVolumeNum.value = percent;
       if (el.playbackVolumeReadout) el.playbackVolumeReadout.textContent = `${percent}%`;
 
-      resetAudioPlayerPlaybackLevel();
+      // The download/player file is re-rendered below. While the user is dragging the slider,
+      // apply temporary live gain so the control is immediately audible.
+      applyTemporaryPlaybackGain(percent, allowAudioGraphResume);
       scheduleOutputVolumeRender();
+    }
+
+    function applyTemporaryPlaybackGain(percent, allowAudioGraphResume = false) {
+      try {
+        if (!el.audioPlayer) return;
+        const gain = clamp((Number(percent) || 100) / 100, 0, 5);
+        el.audioPlayer.muted = false;
+        el.audioPlayer.setAttribute("playsinline", "");
+
+        if (gain <= 1) {
+          el.audioPlayer.volume = gain;
+          if (playbackGainNode) playbackGainNode.gain.value = 1;
+          return;
+        }
+
+        el.audioPlayer.volume = 1;
+        ensurePlaybackGainGraph(allowAudioGraphResume);
+        if (playbackGainNode) playbackGainNode.gain.value = gain;
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     function ensurePlaybackGainGraph(allowResume = false) {
@@ -5912,9 +5937,18 @@
     }
 
     function processExternalRobotFx(input, sampleRate, preset) {
-      const shaped = applyExternalPresetShaping(input, sampleRate, preset);
-      const externalFx = buildExternalRobotFx(preset?.fx || {}, preset || {});
-      return applyRobotFx(shaped.samples, shaped.sampleRate || sampleRate, externalFx);
+      // Keep Robot FX audio inputs on the same preset FX chain as TTS.
+      // Real mic/file audio will never be identical to eSpeak TTS, but the robot effect path must not use a separate boosted chain.
+      const clean = prepareExternalRobotInput(input, sampleRate);
+      return applyRobotFx(clean, sampleRate, preset?.fx || {});
+    }
+
+    function prepareExternalRobotInput(input, sampleRate) {
+      if (!(input instanceof Float32Array) || !input.length) return input;
+      let output = new Float32Array(input);
+      output = highpass(output, sampleRate, 65);
+      output = lowpass(output, sampleRate, Math.min(7200, sampleRate / 2 - 120));
+      return output;
     }
 
     function masterAutoMicResultLevel(input) {
