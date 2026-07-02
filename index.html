@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v22.4 Export Loudness Maximizer</title>
+  <title>Robo Phonix v22.5 Measured Export Booster</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -4740,45 +4740,80 @@
         return floatToInt16(applyFixedGain(float, gain));
       }
 
-      return floatToInt16(applyExportLoudnessMaximizer(float, gain));
+      return floatToInt16(applyMeasuredExportBooster(float, gain));
     }
 
-    function applyExportLoudnessMaximizer(input, gain) {
+    function applyMeasuredExportBooster(input, gain) {
       if (!(input instanceof Float32Array) || !input.length) return input;
 
       const g = clamp(Number(gain) || 1, 1, 5);
-      if (g <= 1.001) {
-        const copy = new Float32Array(input.length);
-        copy.set(input);
-        return copy;
+      const copy = new Float32Array(input.length);
+      copy.set(input);
+      if (g <= 1.001) return copy;
+
+      const before = measureFullLevel(copy);
+      if (before.peak < .001 || before.rms < .001) return copy;
+
+      // Export-only booster. This deliberately changes only the rendered MP3/WAV buffer.
+      // It does not touch Robot FX, Vocoder FX, TTS, Auto Mic detection, or the player route.
+      const ceiling = .992;
+      const targetRms = clamp(before.rms * g, before.rms, .82);
+      let working = copy;
+
+      // Stage 1: real gain into a ceiling. This guarantees that the file changes audibly.
+      working = hardCeilingLimit(applyFixedGain(working, g), ceiling);
+
+      // Stage 2: if peak headroom was already gone, raise perceived loudness by reducing crest factor.
+      // This is what a plain sample multiplier failed to do.
+      let after = measureFullLevel(working);
+      for (let pass = 0; pass < 5 && after.rms > .001 && after.rms < targetRms * .92; pass++) {
+        const needed = clamp(targetRms / after.rms, 1.05, 2.2);
+        working = hardCeilingLimit(applyFixedGain(working, needed), ceiling);
+        working = parallelDensityBoost(working, clamp(g, 1.2, 5), ceiling);
+        after = measureFullLevel(working);
       }
 
-      const before = measureActiveLevel(input);
-      if (before.peak < .001 || before.rms < .001) {
-        const silent = new Float32Array(input.length);
-        silent.set(input);
-        return silent;
+      return hardCeilingLimit(working, ceiling);
+    }
+
+    function measureFullLevel(input) {
+      let peak = 0;
+      let sum = 0;
+      for (let i = 0; i < input.length; i++) {
+        const value = Number(input[i]) || 0;
+        const abs = Math.abs(value);
+        if (abs > peak) peak = abs;
+        sum += value * value;
+      }
+      return {
+        peak,
+        rms: Math.sqrt(sum / Math.max(1, input.length))
+      };
+    }
+
+    function hardCeilingLimit(input, ceiling = .992) {
+      const c = clamp(ceiling, .1, .999);
+      const output = new Float32Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        output[i] = clamp(input[i], -c, c);
+      }
+      return output;
+    }
+
+    function parallelDensityBoost(input, amount = 2, ceiling = .992) {
+      const c = clamp(ceiling, .1, .999);
+      const drive = clamp(1 + amount * 1.6, 1.2, 9);
+      const mix = clamp((amount - 1) / 4, .08, .72);
+      const output = new Float32Array(input.length);
+      const norm = Math.atan(drive);
+
+      for (let i = 0; i < input.length; i++) {
+        const dry = input[i];
+        const dense = Math.atan(dry * drive) / norm;
+        output[i] = clamp(dry * (1 - mix) + dense * mix, -c, c);
       }
 
-      // Export-only loudness maximizer.
-      // This is intentionally not a player gain and not part of Robot FX/Vocoder/TTS processing.
-      // The slider maps to a higher active RMS target, then a lookahead limiter catches peaks.
-      const ceiling = .985;
-      const requestedRms = before.rms * g;
-      const targetRms = clamp(requestedRms, before.rms, .54);
-      const makeup = clamp(targetRms / Math.max(.001, before.rms), 1, 8);
-
-      let driven = applyFixedGain(input, makeup);
-      driven = applyVoiceSafeCompressor(driven, .32, 5.5, .82);
-      driven = applyLookaheadLimiter(driven, ceiling, 384, .0045, .055);
-
-      const after = measureActiveLevel(driven);
-      if (after.rms > .001 && after.rms < targetRms * .82) {
-        const topUp = clamp(targetRms / after.rms, 1, 2.35);
-        driven = applyLookaheadLimiter(applyFixedGain(driven, topUp), ceiling, 384, .0045, .06);
-      }
-
-      return driven;
+      return output;
     }
 
     function applyVoiceSafeCompressor(input, threshold = .32, ratio = 5.5, knee = .82) {
@@ -4868,6 +4903,7 @@
       revokeUrls();
 
       const outputInt16 = applyOutputVolumeToInt16(currentOutputSource.int16);
+      updateOutputBoostReadout(currentOutputSource.int16, outputInt16);
       const wavBlob = encodeWavMono(outputInt16, currentOutputSource.sampleRate);
       const mp3Blob = encodeMp3Mono(outputInt16, currentOutputSource.sampleRate, currentOutputSource.kbps);
       const mp3Url = URL.createObjectURL(mp3Blob);
@@ -4892,6 +4928,32 @@
         el.audioPlayer.currentTime = Math.min(currentTime, Math.max(0, outputInt16.length / currentOutputSource.sampleRate - .05));
         el.audioPlayer.play().catch(() => {});
       }
+    }
+
+    function updateOutputBoostReadout(sourceInt16, outputInt16) {
+      try {
+        const percent = getPlaybackVolumePercent();
+        if (!el.playbackVolumeReadout) return;
+        if (percent === 100 || !(sourceInt16 instanceof Int16Array) || !(outputInt16 instanceof Int16Array)) {
+          el.playbackVolumeReadout.textContent = `${percent}%`;
+          return;
+        }
+
+        const before = measureInt16Rms(sourceInt16);
+        const after = measureInt16Rms(outputInt16);
+        const db = before > 0 && after > 0 ? 20 * Math.log10(after / before) : 0;
+        const dbText = Number.isFinite(db) ? `${db >= 0 ? "+" : ""}${db.toFixed(1)} dB RMS` : "rendered";
+        el.playbackVolumeReadout.textContent = `${percent}% • ${dbText}`;
+      } catch (_) {}
+    }
+
+    function measureInt16Rms(input) {
+      let sum = 0;
+      for (let i = 0; i < input.length; i++) {
+        const value = input[i] / 32768;
+        sum += value * value;
+      }
+      return Math.sqrt(sum / Math.max(1, input.length));
     }
 
     function scheduleOutputVolumeRender() {
