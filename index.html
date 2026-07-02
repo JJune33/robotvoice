@@ -4714,11 +4714,20 @@
 
     function applyOutputVolumeToInt16(source) {
       const gain = clamp(getPlaybackVolumePercent() / 100, 0, 5);
-      const output = new Int16Array(source.length);
+      if (!(source instanceof Int16Array) || !source.length) return source;
+
+      const float = new Float32Array(source.length);
       for (let i = 0; i < source.length; i++) {
-        output[i] = clampInt(Math.round(source[i] * gain), -32768, 32767);
+        float[i] = source[i] / 32768;
       }
-      return output;
+
+      if (Math.abs(gain - 1) < .001) {
+        return floatToInt16(float);
+      }
+
+      const gained = applyFixedGain(float, gain);
+      const safe = gain > 1 ? brickwallLimiter(gained, .985) : gained;
+      return floatToInt16(safe);
     }
 
     function publishEncodedOutput(baseInt16, sampleRate, kbps, mp3Name, wavName, options = {}) {
