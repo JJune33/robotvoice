@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robo Phonix v23.0 Stability Recovery</title>
+  <title>Robo Phonix v23.1 Calm Space External Robot FX</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
@@ -5986,7 +5986,7 @@
       const lowpass = Number(fx.lowpass) || (isDeepPreset ? 2800 : 3900);
       const highpass = Number(fx.highpass) || (isDeepPreset ? 80 : 130);
 
-      return {
+      const externalFx = {
         ...fx,
         ringFreq: Number(fx.ringFreq) || ringFreqFallback,
         ringDepth: clamp(baseRingDepth * 1.38 + .055, .1, .62),
@@ -6005,6 +6005,25 @@
         drive: clamp(baseDrive * 1.035 + .025, .98, 1.36),
         ceiling: clamp(Number(fx.ceiling) || .92, .86, .94)
       };
+
+      if (preset?.id === "en-calm-space-ai") {
+        externalFx.ringFreq = 34;
+        externalFx.ringDepth = .19;
+        externalFx.bitDepth = 9;
+        externalFx.combMs = 8;
+        externalFx.combMix = .12;
+        externalFx.combFeedback = .045;
+        externalFx.formant = -.24;
+        externalFx.lowpass = 3400;
+        externalFx.highpass = 105;
+        externalFx.wobbleFreq = .42;
+        externalFx.wobbleDepth = .018;
+        externalFx.drive = 1.16;
+        externalFx.noise = .009;
+        externalFx.ceiling = .92;
+      }
+
+      return externalFx;
     }
 
     function addExternalRobotExciter(input, sampleRate, preset) {
